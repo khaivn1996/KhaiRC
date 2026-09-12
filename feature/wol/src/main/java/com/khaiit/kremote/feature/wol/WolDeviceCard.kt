@@ -62,7 +62,7 @@ fun WolDeviceCard(
         )
     }
 
-    var showMacDialog by remember {
+    var showConfigDialog by remember {
         mutableStateOf(false)
     }
 
@@ -72,9 +72,9 @@ fun WolDeviceCard(
         )
     }
 
-    var broadcastInput by remember {
+    var targetIpInput by remember {
         mutableStateOf(
-            config.broadcastAddress
+            config.targetIp
         )
     }
 
@@ -82,7 +82,7 @@ fun WolDeviceCard(
         mutableStateOf<String?>(null)
     }
 
-    var broadcastError by remember {
+    var targetIpError by remember {
         mutableStateOf<String?>(null)
     }
 
@@ -90,6 +90,9 @@ fun WolDeviceCard(
         mutableStateOf<String?>(null)
     }
 
+    /*
+     * Gửi Wake-on-LAN.
+     */
     val sendWakePacket: () -> Unit = {
 
         coroutineScope.launch {
@@ -102,7 +105,7 @@ fun WolDeviceCard(
                 .onSuccess {
 
                     statusText =
-                        "Đã gửi tới ${config.broadcastAddress}:9"
+                        "Đã gửi tới ${config.targetIp}:9"
                 }
                 .onFailure { error ->
 
@@ -113,6 +116,11 @@ fun WolDeviceCard(
         }
     }
 
+    /*
+     * Android 17 / API 37:
+     * truy cập thiết bị trong local network cần
+     * ACCESS_LOCAL_NETWORK runtime permission.
+     */
     val permissionLauncher =
         rememberLauncherForActivityResult(
             contract =
@@ -131,21 +139,34 @@ fun WolDeviceCard(
         }
 
     Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor =
-                MaterialTheme.colorScheme.surfaceContainer
-        )
+        modifier =
+            modifier.fillMaxWidth(),
+
+        shape =
+            RoundedCornerShape(24.dp),
+
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    MaterialTheme.colorScheme.surfaceContainer
+            )
     ) {
 
         Column(
-            modifier = Modifier.padding(20.dp)
+            modifier =
+                Modifier.padding(20.dp)
         ) {
 
+            /*
+             * Header:
+             *
+             * PC                          POWER
+             * D8:BB:C1:DC:2E:41
+             */
             Row(
                 modifier =
                     Modifier.fillMaxWidth(),
+
                 verticalAlignment =
                     Alignment.CenterVertically
             ) {
@@ -157,22 +178,33 @@ fun WolDeviceCard(
 
                     Text(
                         text = "PC",
+
                         style =
                             MaterialTheme.typography.titleLarge,
+
                         fontWeight =
                             FontWeight.Bold
                     )
 
                     Text(
-                        text = config.macAddress,
+                        text =
+                            config.macAddress,
+
                         style =
                             MaterialTheme.typography.bodyMedium,
+
                         color =
                             MaterialTheme.colorScheme
                                 .onSurfaceVariant
                     )
                 }
 
+                /*
+                 * WAKE / ON
+                 *
+                 * Primary color vì đây là hành động bật máy.
+                 * Khác với nút OFF quạt dùng error/red.
+                 */
                 IconButton(
                     onClick = {
 
@@ -194,21 +226,26 @@ fun WolDeviceCard(
                             sendWakePacket()
                         }
                     },
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(
-                            MaterialTheme.colorScheme.primary
-                        )
+
+                    modifier =
+                        Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(
+                                MaterialTheme.colorScheme.primary
+                            )
                 ) {
 
                     Icon(
                         imageVector =
                             Icons.Filled.PowerSettingsNew,
+
                         contentDescription =
                             "Bật PC bằng Wake-on-LAN",
+
                         tint =
                             MaterialTheme.colorScheme.onPrimary,
+
                         modifier =
                             Modifier.size(24.dp)
                     )
@@ -220,9 +257,13 @@ fun WolDeviceCard(
                     Modifier.size(16.dp)
             )
 
+            /*
+             * CHANGE
+             */
             Row(
                 modifier =
                     Modifier.fillMaxWidth(),
+
                 horizontalArrangement =
                     Arrangement.End
             ) {
@@ -233,16 +274,16 @@ fun WolDeviceCard(
                         macInput =
                             config.macAddress
 
-                        broadcastInput =
-                            config.broadcastAddress
+                        targetIpInput =
+                            config.targetIp
 
                         macError =
                             null
 
-                        broadcastError =
+                        targetIpError =
                             null
 
-                        showMacDialog =
+                        showConfigDialog =
                             true
                     }
                 ) {
@@ -250,8 +291,10 @@ fun WolDeviceCard(
                     Icon(
                         imageVector =
                             Icons.Filled.Edit,
+
                         contentDescription =
                             null,
+
                         modifier =
                             Modifier.size(18.dp)
                     )
@@ -265,6 +308,11 @@ fun WolDeviceCard(
                 }
             }
 
+            /*
+             * Status / debug.
+             *
+             * Trong giai đoạn test giữ IP + port để dễ debug.
+             */
             statusText?.let { status ->
 
                 Spacer(
@@ -274,8 +322,10 @@ fun WolDeviceCard(
 
                 Text(
                     text = status,
+
                     style =
                         MaterialTheme.typography.bodySmall,
+
                     color =
                         MaterialTheme.colorScheme
                             .onSurfaceVariant
@@ -284,15 +334,23 @@ fun WolDeviceCard(
         }
     }
 
-    if (showMacDialog) {
+    /*
+     * Config dialog
+     */
+    if (showConfigDialog) {
 
         AlertDialog(
             onDismissRequest = {
-                showMacDialog = false
+
+                showConfigDialog =
+                    false
             },
 
             title = {
-                Text("PC Wake-on-LAN")
+
+                Text(
+                    "PC Wake-on-LAN"
+                )
             },
 
             text = {
@@ -302,24 +360,37 @@ fun WolDeviceCard(
                         Arrangement.spacedBy(12.dp)
                 ) {
 
+                    /*
+                     * MAC ADDRESS
+                     */
                     OutlinedTextField(
-                        value = macInput,
+                        value =
+                            macInput,
 
                         onValueChange = {
-                            macInput = it
-                            macError = null
+
+                            macInput =
+                                it
+
+                            macError =
+                                null
                         },
 
                         modifier =
                             Modifier.fillMaxWidth(),
 
-                        singleLine = true,
+                        singleLine =
+                            true,
 
                         label = {
-                            Text("MAC Address")
+
+                            Text(
+                                "MAC Address"
+                            )
                         },
 
                         placeholder = {
+
                             Text(
                                 WolSettings.DEFAULT_MAC_ADDRESS
                             )
@@ -331,40 +402,55 @@ fun WolDeviceCard(
                         supportingText = {
 
                             macError?.let {
+
                                 Text(it)
                             }
                         }
                     )
 
+                    /*
+                     * TARGET IP
+                     */
                     OutlinedTextField(
-                        value = broadcastInput,
+                        value =
+                            targetIpInput,
 
                         onValueChange = {
-                            broadcastInput = it
-                            broadcastError = null
+
+                            targetIpInput =
+                                it
+
+                            targetIpError =
+                                null
                         },
 
                         modifier =
                             Modifier.fillMaxWidth(),
 
-                        singleLine = true,
+                        singleLine =
+                            true,
 
                         label = {
-                            Text("Broadcast Address")
+
+                            Text(
+                                "Target IP"
+                            )
                         },
 
                         placeholder = {
+
                             Text(
-                                WolSettings.DEFAULT_BROADCAST_ADDRESS
+                                WolSettings.DEFAULT_TARGET_IP
                             )
                         },
 
                         isError =
-                            broadcastError != null,
+                            targetIpError != null,
 
                         supportingText = {
 
-                            broadcastError?.let {
+                            targetIpError?.let {
+
                                 Text(it)
                             }
                         }
@@ -372,30 +458,34 @@ fun WolDeviceCard(
                 }
             },
 
+            /*
+             * SET
+             */
             confirmButton = {
 
                 TextButton(
                     onClick = {
+
                         controller
                             .saveConfig(
                                 macAddress =
                                     macInput,
 
-                                broadcastAddress =
-                                    broadcastInput
+                                targetIp =
+                                    targetIpInput
                             )
                             .onSuccess { newConfig ->
 
                                 config =
                                     newConfig
 
-                                showMacDialog =
+                                showConfigDialog =
                                     false
 
                                 macError =
                                     null
 
-                                broadcastError =
+                                targetIpError =
                                     null
                             }
                             .onFailure { error ->
@@ -416,11 +506,11 @@ fun WolDeviceCard(
                                     }
 
                                     message.contains(
-                                        "Broadcast",
+                                        "Target IP",
                                         ignoreCase = true
                                     ) -> {
 
-                                        broadcastError =
+                                        targetIpError =
                                             message
                                     }
 
@@ -438,11 +528,16 @@ fun WolDeviceCard(
                 }
             },
 
+            /*
+             * CANCEL
+             */
             dismissButton = {
 
                 TextButton(
                     onClick = {
-                        showMacDialog = false
+
+                        showConfigDialog =
+                            false
                     }
                 ) {
 

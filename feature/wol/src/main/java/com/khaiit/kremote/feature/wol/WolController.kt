@@ -14,7 +14,7 @@ class WolController(
 
     fun saveConfig(
         macAddress: String,
-        broadcastAddress: String
+        targetIp: String
     ): Result<WolConfig> {
 
         return runCatching {
@@ -26,11 +26,11 @@ class WolController(
                     macAddress
                 }
 
-            val broadcastCandidate =
-                if (broadcastAddress.isBlank()) {
-                    WolSettings.DEFAULT_BROADCAST_ADDRESS
+            val targetIpCandidate =
+                if (targetIp.isBlank()) {
+                    WolSettings.DEFAULT_TARGET_IP
                 } else {
-                    broadcastAddress
+                    targetIp
                 }
 
             val normalizedMac =
@@ -38,8 +38,8 @@ class WolController(
                     macCandidate
                 )
 
-            val normalizedBroadcast =
-                broadcastCandidate.trim()
+            val normalizedTargetIp =
+                targetIpCandidate.trim()
 
             require(
                 MacAddress.isValid(
@@ -51,10 +51,10 @@ class WolController(
 
             require(
                 Ipv4Address.isValid(
-                    normalizedBroadcast
+                    normalizedTargetIp
                 )
             ) {
-                "Broadcast Address không hợp lệ"
+                "Target IP không hợp lệ"
             }
 
             val newConfig =
@@ -62,8 +62,8 @@ class WolController(
                     macAddress =
                         normalizedMac,
 
-                    broadcastAddress =
-                        normalizedBroadcast
+                    targetIp =
+                        normalizedTargetIp
                 )
 
             settings.saveConfig(
@@ -85,8 +85,8 @@ class WolController(
                 macAddress =
                     currentConfig.macAddress,
 
-                broadcastAddress =
-                    currentConfig.broadcastAddress,
+                targetAddress =
+                    currentConfig.targetIp,
 
                 port = 9
             )

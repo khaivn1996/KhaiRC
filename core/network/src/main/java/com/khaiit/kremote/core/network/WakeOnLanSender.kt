@@ -4,7 +4,7 @@ interface WakeOnLanSender {
 
     suspend fun wake(
         macAddress: String,
-        broadcastAddress: String,
+        targetAddress: String,
         port: Int = 9
     )
 }

@@ -12,7 +12,7 @@ class AndroidWakeOnLanSender : WakeOnLanSender {
 
     override suspend fun wake(
         macAddress: String,
-        broadcastAddress: String,
+        targetAddress: String,
         port: Int
     ) = withContext(Dispatchers.IO) {
 
@@ -21,9 +21,9 @@ class AndroidWakeOnLanSender : WakeOnLanSender {
         }
 
         require(
-            Ipv4Address.isValid(broadcastAddress)
+            Ipv4Address.isValid(targetAddress)
         ) {
-            "Broadcast Address không hợp lệ"
+            "Target IP không hợp lệ"
         }
 
         val macBytes =
@@ -31,7 +31,7 @@ class AndroidWakeOnLanSender : WakeOnLanSender {
 
         val destination =
             InetAddress.getByName(
-                broadcastAddress.trim()
+                targetAddress.trim()
             )
 
         require(destination is Inet4Address) {
@@ -43,8 +43,6 @@ class AndroidWakeOnLanSender : WakeOnLanSender {
 
         DatagramSocket().use { socket ->
 
-            socket.broadcast = true
-
             val packet =
                 DatagramPacket(
                     magicPacket,
@@ -53,6 +51,16 @@ class AndroidWakeOnLanSender : WakeOnLanSender {
                     port
                 )
 
+            /*
+             * Gửi 3 lần để tăng độ tin cậy.
+             *
+             * Magic Packet:
+             * 6 byte FF
+             * +
+             * MAC Address lặp 16 lần
+             *
+             * Tổng cộng 102 byte.
+             */
             repeat(3) { index ->
 
                 socket.send(packet)
@@ -83,7 +91,7 @@ class AndroidWakeOnLanSender : WakeOnLanSender {
                 0xFF.toByte()
         }
 
-        // MAC Address lặp lại 16 lần
+        // MAC Address lặp 16 lần
         for (i in 0 until 16) {
 
             System.arraycopy(

@@ -22,16 +22,16 @@ class WolSettings(
             )
                 ?: DEFAULT_MAC_ADDRESS
 
-        val broadcastAddress =
+        val targetIp =
             preferences.getString(
-                KEY_BROADCAST_ADDRESS,
+                KEY_TARGET_IP,
                 null
             )
-                ?: DEFAULT_BROADCAST_ADDRESS
+                ?: DEFAULT_TARGET_IP
 
         return WolConfig(
             macAddress = macAddress,
-            broadcastAddress = broadcastAddress
+            targetIp = targetIp
         )
     }
 
@@ -46,8 +46,8 @@ class WolSettings(
                 config.macAddress
             )
             .putString(
-                KEY_BROADCAST_ADDRESS,
-                config.broadcastAddress
+                KEY_TARGET_IP,
+                config.targetIp
             )
             .apply()
     }
@@ -57,8 +57,8 @@ class WolSettings(
         const val DEFAULT_MAC_ADDRESS =
             "D8:BB:C1:DC:2E:40"
 
-        const val DEFAULT_BROADCAST_ADDRESS =
-            "192.168.2.255"
+        const val DEFAULT_TARGET_IP =
+            "192.168.2.19"
 
         private const val PREFS_NAME =
             "wol_settings"
@@ -66,7 +66,7 @@ class WolSettings(
         private const val KEY_MAC_ADDRESS =
             "mac_address"
 
-        private const val KEY_BROADCAST_ADDRESS =
-            "broadcast_address"
+        private const val KEY_TARGET_IP =
+            "target_ip"
     }
 }
