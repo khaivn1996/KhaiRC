@@ -7,6 +7,7 @@ import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.Inet4Address
 import java.net.InetAddress
+import kotlin.time.Duration.Companion.milliseconds
 
 class AndroidWakeOnLanSender : WakeOnLanSender {
 
@@ -66,7 +67,7 @@ class AndroidWakeOnLanSender : WakeOnLanSender {
                 socket.send(packet)
 
                 if (index < 2) {
-                    delay(80)
+                    delay(80.milliseconds)
                 }
             }
         }

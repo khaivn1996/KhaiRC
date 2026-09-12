@@ -1,6 +1,7 @@
 package com.khaiit.kremote.feature.wol
 
 import android.content.Context
+import androidx.core.content.edit
 
 class WolSettings(
     context: Context
@@ -39,17 +40,17 @@ class WolSettings(
         config: WolConfig
     ) {
 
-        preferences
-            .edit()
-            .putString(
+        preferences.edit {
+            putString(
                 KEY_MAC_ADDRESS,
                 config.macAddress
             )
-            .putString(
+
+            putString(
                 KEY_TARGET_IP,
                 config.targetIp
             )
-            .apply()
+        }
     }
 
     companion object {
