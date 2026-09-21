@@ -30,19 +30,113 @@ class AndroidWakeOnLanSender : WakeOnLanSender {
         val macBytes =
             MacAddress.parse(macAddress)
 
-        val destination =
+        val unicastDestination =
             InetAddress.getByName(
                 targetAddress.trim()
             )
 
-        require(destination is Inet4Address) {
+        require(unicastDestination is Inet4Address) {
             "Wake-on-LAN hiện chỉ hỗ trợ IPv4"
         }
+
+        /*
+         * LAN hiện tại:
+         *
+         * 192.168.2.0/24
+         *
+         * nên broadcast address là:
+         *
+         * 192.168.2.255
+         */
+        val broadcastDestination =
+            InetAddress.getByName(
+                "192.168.2.255"
+            )
 
         val magicPacket =
             createMagicPacket(macBytes)
 
+        var unicastSuccess = false
+        var broadcastSuccess = false
+
+        /*
+         * =========================================================
+         * 1. UNICAST WOL
+         *
+         * Dùng chủ yếu khi đi qua WireGuard -> OpenWrt.
+         *
+         * OpenWrt có permanent neighbor:
+         *
+         * 192.168.2.19 -> D8:BB:C1:DC:2E:41
+         *
+         * nên vẫn gửi Ethernet frame tới PC được khi PC đang OFF.
+         * =========================================================
+         */
+        runCatching {
+
+            sendMagicPackets(
+                magicPacket = magicPacket,
+                destination = unicastDestination,
+                port = port,
+                broadcast = false
+            )
+
+        }.onSuccess {
+
+            unicastSuccess = true
+        }
+
+        /*
+         * =========================================================
+         * 2. BROADCAST WOL
+         *
+         * Dùng khi điện thoại đang ở trực tiếp trong LAN nhà.
+         *
+         * Không cần OpenWrt giữ ARP / permanent neighbor.
+         *
+         * Nếu đang ở ngoài nhà qua WireGuard thì packet broadcast
+         * có thể bị drop. Điều đó không sao vì unicast phía trên
+         * vẫn xử lý WOL qua OpenWrt.
+         * =========================================================
+         */
+        runCatching {
+
+            sendMagicPackets(
+                magicPacket = magicPacket,
+                destination = broadcastDestination,
+                port = port,
+                broadcast = true
+            )
+
+        }.onSuccess {
+
+            broadcastSuccess = true
+        }
+
+        /*
+         * Chỉ báo lỗi nếu CẢ HAI đường đều không gửi được.
+         */
+        check(
+            unicastSuccess || broadcastSuccess
+        ) {
+            "Không thể gửi Wake-on-LAN qua unicast hoặc broadcast"
+        }
+    }
+
+    private suspend fun sendMagicPackets(
+        magicPacket: ByteArray,
+        destination: InetAddress,
+        port: Int,
+        broadcast: Boolean
+    ) {
+
         DatagramSocket().use { socket ->
+
+            /*
+             * Bắt buộc bật broadcast khi gửi tới
+             * 192.168.2.255.
+             */
+            socket.broadcast = broadcast
 
             val packet =
                 DatagramPacket(
@@ -56,6 +150,7 @@ class AndroidWakeOnLanSender : WakeOnLanSender {
              * Gửi 3 lần để tăng độ tin cậy.
              *
              * Magic Packet:
+             *
              * 6 byte FF
              * +
              * MAC Address lặp 16 lần
