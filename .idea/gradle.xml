@@ -14,6 +14,7 @@
             <option value="$PROJECT_DIR$/core/ir" />
             <option value="$PROJECT_DIR$/core/network" />
             <option value="$PROJECT_DIR$/feature" />
+            <option value="$PROJECT_DIR$/feature/ac" />
             <option value="$PROJECT_DIR$/feature/fan" />
             <option value="$PROJECT_DIR$/feature/wol" />
           </set>

@@ -14,6 +14,8 @@ import androidx.compose.ui.unit.dp
 import com.khaiit.kremote.feature.fan.FanDeviceCard
 import com.khaiit.kremote.feature.wol.WolController
 import com.khaiit.kremote.feature.wol.WolDeviceCard
+import com.khaiit.kremote.feature.ac.DaikinAcController
+import com.khaiit.kremote.feature.ac.DaikinAcDeviceCard
 
 @Composable
 fun HomeScreen(
@@ -22,6 +24,7 @@ fun HomeScreen(
     onSwing: () -> Unit,
     onFanOff: () -> Unit,
     wolController: WolController,
+    daikinAcController: DaikinAcController,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -42,6 +45,10 @@ fun HomeScreen(
             onPowerHigh = onPowerHigh,
             onSwing = onSwing,
             onOff = onFanOff
+        )
+
+        DaikinAcDeviceCard(
+            controller = daikinAcController
         )
 
         WolDeviceCard(

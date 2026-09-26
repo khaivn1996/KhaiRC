@@ -6,6 +6,9 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.remember
 import com.khaiit.kremote.core.ir.AndroidIrTransmitter
 import com.khaiit.kremote.core.network.AndroidWakeOnLanSender
+import com.khaiit.kremote.feature.ac.DaikinAcController
+import com.khaiit.kremote.feature.ac.DaikinAcDeviceCard
+import com.khaiit.kremote.feature.ac.DaikinAcSettings
 import com.khaiit.kremote.feature.fan.FanController
 import com.khaiit.kremote.feature.wol.WolController
 import com.khaiit.kremote.feature.wol.WolSettings
@@ -34,6 +37,11 @@ class MainActivity : ComponentActivity() {
                 applicationContext
             )
 
+        val daikinAcSettings =
+            DaikinAcSettings(
+                applicationContext
+            )
+
         setContent {
 
             KhaiRCTheme {
@@ -54,6 +62,13 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
+                val daikinAcController = remember {
+                    DaikinAcController(
+                        irTransmitter = irTransmitter,
+                        stateStore = daikinAcSettings
+                    )
+                }
+
                 /*
                  * Dashboard
                  */
@@ -71,7 +86,10 @@ class MainActivity : ComponentActivity() {
                         fanController::off,
 
                     wolController =
-                        wolController
+                        wolController,
+
+                    daikinAcController =
+                        daikinAcController
                 )
             }
         }

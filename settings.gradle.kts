@@ -36,3 +36,6 @@ project(":feature:fan").projectDir = file("feature/fan")
 
 include(":feature:wol")
 project(":feature:wol").projectDir = file("feature/wol")
+
+include(":feature:ac")
+project(":feature:ac").projectDir = file("feature/ac")
