@@ -1,4 +1,4 @@
-package com.khaiit.kremote.feature.ac
+package com.khaiit.kremote.feature.ac.daikin
 
 import com.khaiit.kremote.core.ir.IrTransmitter
 import org.junit.Assert.assertEquals

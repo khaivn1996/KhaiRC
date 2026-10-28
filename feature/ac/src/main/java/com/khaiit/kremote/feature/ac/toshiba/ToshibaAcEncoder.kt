@@ -1,4 +1,4 @@
-package com.khaiit.kremote.feature.ac
+package com.khaiit.kremote.feature.ac.toshiba
 
 /**
  * Encoder for the particular Toshiba handset captured for KhaiRC.

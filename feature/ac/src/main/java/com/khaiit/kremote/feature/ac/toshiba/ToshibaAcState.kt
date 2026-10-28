@@ -1,4 +1,4 @@
-package com.khaiit.kremote.feature.ac
+package com.khaiit.kremote.feature.ac.toshiba
 
 /**
  * The current IR samples establish COOL at 24 C only. Temperature is intentionally

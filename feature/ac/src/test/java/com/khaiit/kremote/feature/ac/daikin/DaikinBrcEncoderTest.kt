@@ -1,4 +1,4 @@
-package com.khaiit.kremote.feature.ac
+package com.khaiit.kremote.feature.ac.daikin
 
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals

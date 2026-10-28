@@ -1,4 +1,4 @@
-package com.khaiit.kremote.feature.ac
+package com.khaiit.kremote.feature.ac.daikin
 
 data class DaikinBrcProfile(
     val name: String,

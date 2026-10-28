@@ -1,4 +1,4 @@
-package com.khaiit.kremote.feature.ac
+package com.khaiit.kremote.feature.ac.toshiba
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

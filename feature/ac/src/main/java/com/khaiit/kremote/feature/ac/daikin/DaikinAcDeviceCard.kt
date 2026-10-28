@@ -1,4 +1,4 @@
-package com.khaiit.kremote.feature.ac
+package com.khaiit.kremote.feature.ac.daikin
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement

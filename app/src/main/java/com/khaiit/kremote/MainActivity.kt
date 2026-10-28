@@ -6,10 +6,10 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.remember
 import com.khaiit.kremote.core.ir.AndroidIrTransmitter
 import com.khaiit.kremote.core.network.AndroidWakeOnLanSender
-import com.khaiit.kremote.feature.ac.DaikinAcController
-import com.khaiit.kremote.feature.ac.DaikinAcSettings
-import com.khaiit.kremote.feature.ac.ToshibaAcController
-import com.khaiit.kremote.feature.ac.ToshibaAcSettings
+import com.khaiit.kremote.feature.ac.daikin.DaikinAcController
+import com.khaiit.kremote.feature.ac.daikin.DaikinAcSettings
+import com.khaiit.kremote.feature.ac.toshiba.ToshibaAcController
+import com.khaiit.kremote.feature.ac.toshiba.ToshibaAcSettings
 import com.khaiit.kremote.feature.fan.FanController
 import com.khaiit.kremote.feature.wol.WolController
 import com.khaiit.kremote.feature.wol.WolSettings
