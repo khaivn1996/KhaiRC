@@ -1,5 +1,6 @@
 package com.khaiit.kremote.feature.ac.toshiba
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,10 +8,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -21,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -57,7 +64,8 @@ fun ToshibaAcDeviceCard(
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
                     Text(
@@ -70,10 +78,31 @@ fun ToshibaAcDeviceCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Text(
-                    text = if (state.power) "ON" else "OFF",
-                    style = MaterialTheme.typography.titleMedium
-                )
+
+                IconButton(
+                    onClick = { execute(controller::togglePower) },
+                    enabled = controller.isIrAvailable,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (state.power) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                MaterialTheme.colorScheme.primary
+                            }
+                        )
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.PowerSettingsNew,
+                        contentDescription = if (state.power) "Tắt Toshiba AC" else "Bật Toshiba AC",
+                        tint = if (state.power) {
+                            MaterialTheme.colorScheme.onError
+                        } else {
+                            MaterialTheme.colorScheme.onPrimary
+                        }
+                    )
+                }
             }
 
             Row(
@@ -104,21 +133,11 @@ fun ToshibaAcDeviceCard(
 
             Text(text = "COOL • Fan ${state.fanSpeed.label} • Swing ${if (state.swing) "ON" else "OFF"}")
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(
-                    onClick = { execute(controller::chooseCool) },
-                    enabled = controller.isIrAvailable,
-                    modifier = Modifier.weight(1f)
-                ) { Text("COOL") }
-                OutlinedButton(
-                    onClick = { execute(controller::togglePower) },
-                    enabled = controller.isIrAvailable,
-                    modifier = Modifier.weight(1f)
-                ) { Text(if (state.power) "POWER OFF" else "POWER ON") }
-            }
+            Button(
+                onClick = { execute(controller::chooseCool) },
+                enabled = controller.isIrAvailable,
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("COOL") }
 
             Text(text = "Tốc độ quạt", fontWeight = FontWeight.SemiBold)
             ToshibaFanSpeed.entries.chunked(3).forEach { group ->
@@ -155,12 +174,6 @@ fun ToshibaAcDeviceCard(
                     modifier = Modifier.weight(1f)
                 ) { Text(if (state.swing) "SWING OFF" else "SWING ON") }
             }
-
-            OutlinedButton(
-                onClick = { execute(controller::resendCurrentState) },
-                enabled = controller.isIrAvailable,
-                modifier = Modifier.fillMaxWidth()
-            ) { Text("SEND trạng thái") }
 
             statusText?.let { message ->
                 Spacer(modifier = Modifier.size(2.dp))
