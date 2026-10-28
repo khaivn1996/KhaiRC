@@ -12,7 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PowerSettingsNew
-import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -29,26 +29,29 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/**
+ * Daikin AC card with the same visual structure as ToshibaAcDeviceCard:
+ * header + power, centered temperature controls, state summary, and
+ * grouped mode/fan/swing controls.
+ *
+ * The IR commands are unchanged; this file only rearranges the UI.
+ */
 @Composable
 fun DaikinAcDeviceCard(
     controller: DaikinAcController,
     modifier: Modifier = Modifier
 ) {
-    var state by remember {
-        mutableStateOf(controller.state)
-    }
-
-    var statusText by remember {
-        mutableStateOf<String?>(null)
-    }
+    var state by remember(controller) { mutableStateOf(controller.state) }
+    var statusText by remember(controller) { mutableStateOf<String?>(null) }
 
     val execute: (() -> DaikinAcState) -> Unit = { action ->
         runCatching(action)
-            .onSuccess { newState ->
-                state = newState
+            .onSuccess { updated ->
+                state = updated
                 statusText = null
             }
             .onFailure { error ->
@@ -64,8 +67,10 @@ fun DaikinAcDeviceCard(
         )
     ) {
         Column(
-            modifier = Modifier.padding(20.dp)
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // Same header and power-button semantics as Toshiba.
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -77,22 +82,15 @@ fun DaikinAcDeviceCard(
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
-
                     Text(
-                        text = if (controller.isIrAvailable) {
-                            "IR ready"
-                        } else {
-                            "IR unavailable"
-                        },
+                        text = if (controller.isIrAvailable) "IR ready" else "IR unavailable",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
                 IconButton(
-                    onClick = {
-                        execute(controller::togglePower)
-                    },
+                    onClick = { execute(controller::togglePower) },
                     enabled = controller.isIrAvailable,
                     modifier = Modifier
                         .size(48.dp)
@@ -117,107 +115,73 @@ fun DaikinAcDeviceCard(
                 }
             }
 
-            Spacer(modifier = Modifier.size(18.dp))
+            // Align the temperature +/- controls with the Toshiba card.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = { execute(controller::decreaseTemperature) },
+                    enabled = controller.isIrAvailable &&
+                        state.temperatureC > DaikinAcState.MIN_TEMPERATURE_C
+                ) {
+                    Text("−", fontSize = 24.sp)
+                }
+
+                Text(
+                    text = "${state.temperatureC} °C",
+                    fontSize = 42.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center,
+                    maxLines = 1
+                )
+
+                OutlinedButton(
+                    onClick = { execute(controller::increaseTemperature) },
+                    enabled = controller.isIrAvailable &&
+                        state.temperatureC < DaikinAcState.MAX_TEMPERATURE_C
+                ) {
+                    Text("+", fontSize = 24.sp)
+                }
+            }
 
             Text(
-                text = "${state.temperatureC} C",
-                fontSize = 42.sp,
-                fontWeight = FontWeight.Bold
+                text = "${state.mode.displayName()} • Fan ${state.fanSpeed.displayName()} • " +
+                    "Swing ${if (state.swing) "ON" else "OFF"}",
+                style = MaterialTheme.typography.bodyLarge
             )
 
-            Spacer(modifier = Modifier.size(8.dp))
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            // Daikin cycles through modes instead of selecting only COOL.
+            Button(
+                onClick = { execute(controller::cycleMode) },
+                enabled = controller.isIrAvailable,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    text = state.mode.displayName(),
-                    style = MaterialTheme.typography.bodyLarge
-                )
-
-                Text(
-                    text = "Fan ${state.fanSpeed.displayName()}",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-
-                if (state.swing) {
-                    Icon(
-                        imageVector = Icons.Filled.SwapVert,
-                        contentDescription = "Swing on",
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
+                Text("MODE")
             }
 
-            Spacer(modifier = Modifier.size(18.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            Text("Tốc độ quạt", fontWeight = FontWeight.SemiBold)
+            OutlinedButton(
+                onClick = { execute(controller::cycleFanSpeed) },
+                enabled = controller.isIrAvailable,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                OutlinedButton(
-                    onClick = {
-                        execute(controller::decreaseTemperature)
-                    },
-                    enabled = controller.isIrAvailable
-                ) {
-                    Text("TEMP -")
-                }
-
-                OutlinedButton(
-                    onClick = {
-                        execute(controller::increaseTemperature)
-                    },
-                    enabled = controller.isIrAvailable
-                ) {
-                    Text("TEMP +")
-                }
+                Text("SPEED")
             }
 
-            Spacer(modifier = Modifier.size(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            Text("Hướng gió", fontWeight = FontWeight.SemiBold)
+            OutlinedButton(
+                onClick = { execute(controller::toggleSwing) },
+                enabled = controller.isIrAvailable,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                OutlinedButton(
-                    onClick = {
-                        execute(controller::cycleFanSpeed)
-                    },
-                    enabled = controller.isIrAvailable
-                ) {
-                    Text("SPEED")
-                }
-
-                OutlinedButton(
-                    onClick = {
-                        execute(controller::toggleSwing)
-                    },
-                    enabled = controller.isIrAvailable
-                ) {
-                    Text("SWING")
-                }
-            }
-
-            Spacer(modifier = Modifier.size(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                OutlinedButton(
-                    onClick = {
-                        execute(controller::cycleMode)
-                    },
-                    enabled = controller.isIrAvailable
-                ) {
-                    Text("MODE")
-                }
+                Text(if (state.swing) "SWING OFF" else "SWING ON")
             }
 
             statusText?.let { message ->
-                Spacer(modifier = Modifier.size(10.dp))
+                Spacer(modifier = Modifier.size(2.dp))
                 Text(
                     text = message,
                     color = MaterialTheme.colorScheme.error,
