@@ -27,7 +27,7 @@ data class ToshibaAcState(
 }
 
 enum class ToshibaFanSpeed(val label: String, val protocolByte: Int) {
-    AUTO("AUTO", 0x80),
+    AUTO("\u24B6", 0x80),
     LEVEL_1("1", 0x82),
     LEVEL_2("2", 0x86),
     LEVEL_3("3", 0x81),

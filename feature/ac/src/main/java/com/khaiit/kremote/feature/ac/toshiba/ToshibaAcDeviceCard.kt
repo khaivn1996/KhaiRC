@@ -147,7 +147,7 @@ fun ToshibaAcDeviceCard(
                     onClick = { execute(controller::fix) },
                     enabled = controller.isIrAvailable && state.power,
                     modifier = Modifier.weight(1f)
-                ) { Text("FIX +1 bước") }
+                ) { Text("FIX") }
 
                 OutlinedButton(
                     onClick = { execute(controller::toggleSwing) },

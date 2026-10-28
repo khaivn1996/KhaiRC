@@ -99,19 +99,19 @@ fun DaikinAcDeviceCard(
                         .clip(CircleShape)
                         .background(
                             if (state.power) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
                                 MaterialTheme.colorScheme.error
+                            } else {
+                                MaterialTheme.colorScheme.primary
                             }
                         )
                 ) {
                     Icon(
                         imageVector = Icons.Filled.PowerSettingsNew,
-                        contentDescription = "Power",
+                        contentDescription = if (state.power) "Tắt Daikin AC" else "Bật Daikin AC",
                         tint = if (state.power) {
-                            MaterialTheme.colorScheme.onPrimary
-                        } else {
                             MaterialTheme.colorScheme.onError
+                        } else {
+                            MaterialTheme.colorScheme.onPrimary
                         }
                     )
                 }

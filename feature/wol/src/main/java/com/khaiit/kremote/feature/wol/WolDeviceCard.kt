@@ -202,8 +202,8 @@ fun WolDeviceCard(
                 /*
                  * WAKE / ON
                  *
-                 * Primary color vì đây là hành động bật máy.
-                 * Khác với nút OFF quạt dùng error/red.
+                 * Nút Power màu đỏ đồng bộ với quạt trần.
+                 * Wake-on-LAN chỉ gửi lệnh bật, không xác định trạng thái PC.
                  */
                 IconButton(
                     onClick = {
@@ -232,7 +232,7 @@ fun WolDeviceCard(
                             .size(48.dp)
                             .clip(CircleShape)
                             .background(
-                                MaterialTheme.colorScheme.primary
+                                MaterialTheme.colorScheme.error
                             )
                 ) {
 
@@ -244,7 +244,7 @@ fun WolDeviceCard(
                             "Bật PC bằng Wake-on-LAN",
 
                         tint =
-                            MaterialTheme.colorScheme.onPrimary,
+                            MaterialTheme.colorScheme.onError,
 
                         modifier =
                             Modifier.size(24.dp)
