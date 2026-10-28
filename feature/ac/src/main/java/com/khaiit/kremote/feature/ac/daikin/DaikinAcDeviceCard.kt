@@ -214,15 +214,6 @@ fun DaikinAcDeviceCard(
                 ) {
                     Text("MODE")
                 }
-
-                OutlinedButton(
-                    onClick = {
-                        execute(controller::resendCurrentState)
-                    },
-                    enabled = controller.isIrAvailable
-                ) {
-                    Text("SEND")
-                }
             }
 
             statusText?.let { message ->
