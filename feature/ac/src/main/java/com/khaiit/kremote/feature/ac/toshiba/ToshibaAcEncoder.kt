@@ -3,15 +3,22 @@ package com.khaiit.kremote.feature.ac.toshiba
 /**
  * Encoder for the particular Toshiba handset captured for KhaiRC.
  *
- * Observed data (COOL 24 C):
+ * Captured COOL 24 C: 4F B0 C0 3F 80 0E 80 00 0E (FAN AUTO).
+ * The captured bytes are LSB-first representations. Reversing the bits in
+ * each byte gives the standard Toshiba AC layout F2 0D 03 FC 01 70 01 00 70.
+ * Standard Toshiba AC: byte[5] high nibble = temperature - 17 (17..30 C).
+ * As KhaiRC's encoder already emits LSB-first bytes, byte[5] in our frame is
+ * the bit reverse of ((temperature - 17) << 4).
+ *
+ * This field mapping matches the 24 C capture and published Toshiba AC
+ * protocol. Temperatures other than 24 C still require a real-device test.
+ *
  * - Power/state: 9 bytes / 72 bits, sent twice.
  * - FIX: 7 bytes / 56 bits, sent once.
  * - SWING ON/OFF: 7 bytes / 56 bits, sent twice.
- * - Each byte is transmitted least-significant bit first.
- * - Checksum is XOR of all preceding bytes, verified for these captures.
- *
- * Carrier frequency was NOT measured by the YL-55 receiver. 38 kHz is a
- * provisional test value, not a verified specification of the remote.
+ * - All transmitted bytes are LSB-first.
+ * - Checksum is XOR of all preceding bytes.
+ * - 38 kHz remains a provisional carrier frequency.
  */
 class ToshibaAcEncoder(
     private val frequencyHz: Int = DEFAULT_FREQUENCY_HZ
@@ -39,15 +46,21 @@ class ToshibaAcEncoder(
     fun encodeSwingOff(): EncodedCommand =
         encode(buildShortFrame(SWING_OFF_COMMAND), SWING_REPEATS)
 
-    /** The captured power-off command is fixed, including when a different fan speed was selected. */
     fun buildPowerOrCoolFrame(state: ToshibaAcState): ByteArray {
         val operation = if (state.power) {
             state.fanSpeed.protocolByte
         } else {
             POWER_OFF_COMMAND
         }
+
+        // Original capture at 24 C: 0x0E. Keep the same bit order as all
+        // other KhaiRC Toshiba bytes, including POWER OFF.
+        val temperatureByte = Integer.reverse(
+            (state.temperatureC - ToshibaAcState.MIN_TEMPERATURE_C) shl 4
+        ) ushr 24
+
         return withXorChecksum(
-            0x4F, 0xB0, 0xC0, 0x3F, 0x80, 0x0E, operation, 0x00
+            0x4F, 0xB0, 0xC0, 0x3F, 0x80, temperatureByte, operation, 0x00
         )
     }
 
@@ -66,7 +79,7 @@ class ToshibaAcEncoder(
             repeatCount = repeatCount
         )
 
-    /** Android ConsumerIrManager expects alternating positive MARK / SPACE durations in us. */
+    /** Android ConsumerIrManager uses alternating positive MARK/SPACE microseconds. */
     fun buildPattern(frame: ByteArray, repeatCount: Int): IntArray {
         require(frame.size == STATE_FRAME_BYTES || frame.size == SHORT_FRAME_BYTES) {
             "Expected a 9-byte state frame or a 7-byte short frame"
@@ -89,7 +102,7 @@ class ToshibaAcEncoder(
                     }
                 }
             }
-            result += BIT_MARK_US // stop mark
+            result += BIT_MARK_US
             result += if (frameIndex < repeatCount - 1) {
                 INTER_FRAME_SPACE_US
             } else {
@@ -112,7 +125,6 @@ class ToshibaAcEncoder(
     }
 
     companion object {
-        // Provisional carrier frequency; check on the real AC before relying on it.
         const val DEFAULT_FREQUENCY_HZ = 38_000
         const val HEADER_MARK_US = 4_350
         const val HEADER_SPACE_US = 4_300

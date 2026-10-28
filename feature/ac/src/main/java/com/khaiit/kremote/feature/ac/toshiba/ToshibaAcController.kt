@@ -3,8 +3,8 @@ package com.khaiit.kremote.feature.ac.toshiba
 import com.khaiit.kremote.core.ir.IrTransmitter
 
 /**
- * Independent of Daikin; only transmits the state combinations actually captured.
- * The persisted state is a local UI estimate: IR provides no feedback from the AC.
+ * Independent of Daikin. The saved state is a local UI estimate:
+ * infrared provides no feedback about changes made with other remotes.
  */
 class ToshibaAcController(
     private val irTransmitter: IrTransmitter,
@@ -23,14 +23,31 @@ class ToshibaAcController(
 
     fun powerOff(): ToshibaAcState = sendFullState(state.copy(power = false))
 
-    /** Directly selects COOL, 24 C, using the selected fan speed. */
+    /** Selects COOL at the currently selected temperature and fan speed. */
     fun chooseCool(): ToshibaAcState = sendFullState(state.copy(power = true))
 
-    /** The captured 72-bit messages work for FAN AUTO and levels 1..5 in COOL 24 C. */
     fun setFanSpeed(speed: ToshibaFanSpeed): ToshibaAcState =
         sendFullState(state.copy(power = true, fanSpeed = speed))
 
-    /** FIX is a single 56-bit step command; do not guess the physical louver angle. */
+    /** Adjust temperature by 1 C without resetting fan speed or swing state. */
+    fun increaseTemperature(): ToshibaAcState = setTemperature(
+        (state.temperatureC + 1).coerceAtMost(ToshibaAcState.MAX_TEMPERATURE_C)
+    )
+
+    fun decreaseTemperature(): ToshibaAcState = setTemperature(
+        (state.temperatureC - 1).coerceAtLeast(ToshibaAcState.MIN_TEMPERATURE_C)
+    )
+
+    fun setTemperature(temperatureC: Int): ToshibaAcState {
+        requirePowerOn()
+        require(temperatureC in ToshibaAcState.MIN_TEMPERATURE_C..ToshibaAcState.MAX_TEMPERATURE_C) {
+            "Toshiba temperature must be between 17 and 30 C"
+        }
+        if (temperatureC == state.temperatureC) return state
+        return sendFullState(state.copy(temperatureC = temperatureC))
+    }
+
+    /** FIX is a single 56-bit step command; louver position isn't tracked. */
     fun fix(): ToshibaAcState {
         requirePowerOn()
         transmit(encoder.encodeFix())
@@ -61,7 +78,7 @@ class ToshibaAcController(
     }
 
     private fun requirePowerOn() {
-        check(state.power) { "Turn the air conditioner on before adjusting the louver" }
+        check(state.power) { "Turn the air conditioner on before adjusting the temperature or louver" }
     }
 
     private fun transmit(command: ToshibaAcEncoder.EncodedCommand) {

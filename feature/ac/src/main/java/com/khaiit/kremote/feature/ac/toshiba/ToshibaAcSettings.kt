@@ -17,7 +17,10 @@ class ToshibaAcSettings(context: Context) : ToshibaAcStateStore {
         return ToshibaAcState(
             power = preferences.getBoolean(KEY_POWER, defaults.power),
             fanSpeed = fan,
-            swing = preferences.getBoolean(KEY_SWING, defaults.swing)
+            swing = preferences.getBoolean(KEY_SWING, defaults.swing),
+            // Existing installations without this key retain their old 24 C default.
+            temperatureC = preferences.getInt(KEY_TEMPERATURE, defaults.temperatureC)
+                .coerceIn(ToshibaAcState.MIN_TEMPERATURE_C, ToshibaAcState.MAX_TEMPERATURE_C)
         )
     }
 
@@ -26,6 +29,7 @@ class ToshibaAcSettings(context: Context) : ToshibaAcStateStore {
             .putBoolean(KEY_POWER, state.power)
             .putString(KEY_FAN, state.fanSpeed.name)
             .putBoolean(KEY_SWING, state.swing)
+            .putInt(KEY_TEMPERATURE, state.temperatureC)
             .apply()
     }
 
@@ -34,5 +38,6 @@ class ToshibaAcSettings(context: Context) : ToshibaAcStateStore {
         const val KEY_POWER = "power"
         const val KEY_FAN = "fan_speed"
         const val KEY_SWING = "swing"
+        const val KEY_TEMPERATURE = "temperature_c"
     }
 }

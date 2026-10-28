@@ -1,16 +1,28 @@
 package com.khaiit.kremote.feature.ac.toshiba
 
 /**
- * The current IR samples establish COOL at 24 C only. Temperature is intentionally
- * fixed until captures from other temperatures are independently validated.
+ * Toshiba IR state for COOL. The temperature is transmitted in the 72-bit
+ * command along with the selected fan speed.
+ *
+ * The displayed state is only a local estimate; the air conditioner does not
+ * report changes made with the original remote back to KhaiRC.
  */
 data class ToshibaAcState(
     val power: Boolean = false,
     val fanSpeed: ToshibaFanSpeed = ToshibaFanSpeed.AUTO,
-    val swing: Boolean = false
+    val swing: Boolean = false,
+    val temperatureC: Int = DEFAULT_TEMPERATURE_C
 ) {
+    init {
+        require(temperatureC in MIN_TEMPERATURE_C..MAX_TEMPERATURE_C) {
+            "Toshiba temperature must be between $MIN_TEMPERATURE_C and $MAX_TEMPERATURE_C C"
+        }
+    }
+
     companion object {
-        const val TEMPERATURE_C: Int = 24
+        const val MIN_TEMPERATURE_C = 17
+        const val MAX_TEMPERATURE_C = 30
+        const val DEFAULT_TEMPERATURE_C = 24
     }
 }
 

@@ -16,7 +16,7 @@ class ToshibaAcEncoderTest {
     }
 
     @Test
-    fun powerOffMatchesOriginalRemoteRegardlessOfSelectedFan() {
+    fun powerOffAt24MatchesOriginalRemoteRegardlessOfFan() {
         ToshibaFanSpeed.entries.forEach { speed ->
             assertHex(
                 "4F B0 C0 3F 80 0E E0 00 6E",
@@ -48,6 +48,50 @@ class ToshibaAcEncoderTest {
     }
 
     @Test
+    fun temperature23And25UseToshibaTemperatureNibbleAndXor() {
+        // For byte[5], canonical Toshiba value is (temperature - 17) << 4.
+        // KhaiRC uses bit-reversed bytes (23 C: 0x06; 25 C: 0x01).
+        assertHex(
+            "4F B0 C0 3F 80 06 80 00 06",
+            encoder.buildPowerOrCoolFrame(ToshibaAcState(power = true, temperatureC = 23))
+        )
+        assertHex(
+            "4F B0 C0 3F 80 01 80 00 01",
+            encoder.buildPowerOrCoolFrame(ToshibaAcState(power = true, temperatureC = 25))
+        )
+    }
+
+    @Test
+    fun temperatureBoundsAreEncodedAndValidated() {
+        assertHex(
+            "4F B0 C0 3F 80 00 80 00 00",
+            encoder.buildPowerOrCoolFrame(ToshibaAcState(power = true, temperatureC = 17))
+        )
+        assertHex(
+            "4F B0 C0 3F 80 0B 80 00 0B",
+            encoder.buildPowerOrCoolFrame(ToshibaAcState(power = true, temperatureC = 30))
+        )
+        listOf(16, 31).forEach { invalid ->
+            val result = runCatching { ToshibaAcState(temperatureC = invalid) }
+            if (result.isSuccess) throw AssertionError("Expected validation failure for $invalid")
+        }
+    }
+
+    @Test
+    fun fanSpeedIsPreservedAtNonDefaultTemperatures() {
+        assertHex(
+            "4F B0 C0 3F 80 01 83 00 02",
+            encoder.buildPowerOrCoolFrame(
+                ToshibaAcState(power = true, fanSpeed = ToshibaFanSpeed.LEVEL_5, temperatureC = 25)
+            )
+        )
+        assertHex(
+            "4F B0 C0 3F 80 06 E0 00 66",
+            encoder.buildPowerOrCoolFrame(ToshibaAcState(power = false, temperatureC = 23))
+        )
+    }
+
+    @Test
     fun fixSwingOnAndSwingOffMatchOriginalRemote() {
         assertHex("4F B0 80 7F 84 00 84", encoder.buildFixFrame())
         assertHex("4F B0 80 7F 84 80 04", encoder.buildSwingOnFrame())
@@ -58,13 +102,13 @@ class ToshibaAcEncoderTest {
     fun frameCountsAndTimingSizesAreCorrect() {
         val stateCommand = encoder.encodePowerOrCool(ToshibaAcState(power = true))
         assertEquals(2, stateCommand.repeatCount)
-        assertEquals(296, stateCommand.pattern.size) // 148 timings * 2
+        assertEquals(296, stateCommand.pattern.size)
         assertEquals(4_350, stateCommand.pattern[0])
         assertEquals(4_300, stateCommand.pattern[1])
-        assertEquals(550, stateCommand.pattern[146]) // first stop mark
-        assertEquals(7_350, stateCommand.pattern[147]) // inter-frame space
-        assertEquals(4_350, stateCommand.pattern[148]) // second header
-        assertEquals(550, stateCommand.pattern.last()) // trailing space
+        assertEquals(550, stateCommand.pattern[146])
+        assertEquals(7_350, stateCommand.pattern[147])
+        assertEquals(4_350, stateCommand.pattern[148])
+        assertEquals(550, stateCommand.pattern.last())
 
         val fix = encoder.encodeFix()
         assertEquals(1, fix.repeatCount)
@@ -82,6 +126,8 @@ class ToshibaAcEncoderTest {
     fun builtPatternDecodesBackToPayload() {
         listOf(
             encoder.encodePowerOrCool(ToshibaAcState(power = true)),
+            encoder.encodePowerOrCool(ToshibaAcState(power = true, temperatureC = 23)),
+            encoder.encodePowerOrCool(ToshibaAcState(power = true, temperatureC = 25)),
             encoder.encodePowerOrCool(ToshibaAcState(power = false)),
             encoder.encodeFix(),
             encoder.encodeSwingOn(),

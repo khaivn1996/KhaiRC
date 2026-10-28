@@ -16,12 +16,78 @@ class ToshibaAcControllerTest {
         controller.chooseCool()
         assertTrue(controller.state.power)
         assertEquals(ToshibaFanSpeed.AUTO, controller.state.fanSpeed)
+        assertEquals(24, controller.state.temperatureC)
         assertEquals(296, ir.lastPattern.size)
 
         controller.setFanSpeed(ToshibaFanSpeed.LEVEL_5)
         assertEquals(ToshibaFanSpeed.LEVEL_5, controller.state.fanSpeed)
         assertEquals(2, store.saves)
         assertEquals(2, ir.calls)
+    }
+
+    @Test
+    fun temperatureButtonsTransmitOnceAndKeepFanSwingAndPower() {
+        val ir = FakeIr()
+        val store = FakeStore(ToshibaAcState(
+            power = true,
+            fanSpeed = ToshibaFanSpeed.LEVEL_3,
+            swing = true
+        ))
+        val controller = ToshibaAcController(ir, store)
+
+        controller.increaseTemperature()
+        assertEquals(25, controller.state.temperatureC)
+        assertEquals(ToshibaFanSpeed.LEVEL_3, controller.state.fanSpeed)
+        assertTrue(controller.state.swing)
+        assertTrue(controller.state.power)
+        assertEquals(1, ir.calls)
+        assertEquals(1, store.saves)
+
+        controller.decreaseTemperature()
+        assertEquals(24, controller.state.temperatureC)
+        assertEquals(2, ir.calls)
+        assertEquals(2, store.saves)
+    }
+
+    @Test
+    fun temperatureLimitsDoNotTransmitOrSave() {
+        val ir = FakeIr()
+        val store = FakeStore(ToshibaAcState(power = true, temperatureC = 17))
+        val controller = ToshibaAcController(ir, store)
+        controller.decreaseTemperature()
+        assertEquals(17, controller.state.temperatureC)
+        assertEquals(0, ir.calls)
+        assertEquals(0, store.saves)
+
+        controller.setTemperature(30)
+        assertEquals(30, controller.state.temperatureC)
+        controller.increaseTemperature()
+        assertEquals(1, ir.calls)
+        assertEquals(1, store.saves)
+    }
+
+    @Test
+    fun temperatureCannotBeAdjustedWhenOff() {
+        val ir = FakeIr()
+        val store = FakeStore()
+        val controller = ToshibaAcController(ir, store)
+        if (runCatching { controller.increaseTemperature() }.isSuccess) {
+            throw AssertionError("Expected power-off guard")
+        }
+        assertEquals(24, controller.state.temperatureC)
+        assertEquals(0, ir.calls)
+        assertEquals(0, store.saves)
+    }
+
+    @Test
+    fun choosingCoolRetainsPreviouslySelectedTemperature() {
+        val ir = FakeIr()
+        val store = FakeStore(ToshibaAcState(temperatureC = 26))
+        val controller = ToshibaAcController(ir, store)
+        controller.chooseCool()
+        assertTrue(controller.state.power)
+        assertEquals(26, controller.state.temperatureC)
+        assertEquals(1, ir.calls)
     }
 
     @Test
@@ -46,12 +112,13 @@ class ToshibaAcControllerTest {
 
     @Test
     fun failedTransmissionDoesNotPersistFictitiousState() {
-        val store = FakeStore()
+        val store = FakeStore(ToshibaAcState(power = true))
         val ir = FakeIr(fail = true)
         val controller = ToshibaAcController(ir, store)
-        runCatching { controller.chooseCool() }
-            .onSuccess { throw AssertionError("Expected IR transmit to fail") }
-        assertFalse(controller.state.power)
+        if (runCatching { controller.increaseTemperature() }.isSuccess) {
+            throw AssertionError("Expected IR transmit to fail")
+        }
+        assertEquals(24, controller.state.temperatureC)
         assertEquals(0, store.saves)
     }
 

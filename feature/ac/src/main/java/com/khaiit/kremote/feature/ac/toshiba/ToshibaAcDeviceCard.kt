@@ -19,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -75,11 +76,32 @@ fun ToshibaAcDeviceCard(
                 )
             }
 
-            Text(
-                text = "${ToshibaAcState.TEMPERATURE_C} °C",
-                fontSize = 42.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = { execute(controller::decreaseTemperature) },
+                    enabled = controller.isIrAvailable && state.power &&
+                        state.temperatureC > ToshibaAcState.MIN_TEMPERATURE_C
+                ) { Text("−", fontSize = 24.sp) }
+
+                Text(
+                    text = "${state.temperatureC} °C",
+                    fontSize = 42.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+
+                OutlinedButton(
+                    onClick = { execute(controller::increaseTemperature) },
+                    enabled = controller.isIrAvailable && state.power &&
+                        state.temperatureC < ToshibaAcState.MAX_TEMPERATURE_C
+                ) { Text("+", fontSize = 24.sp) }
+            }
+
             Text(text = "COOL • Fan ${state.fanSpeed.label} • Swing ${if (state.swing) "ON" else "OFF"}")
 
             Row(
@@ -90,7 +112,7 @@ fun ToshibaAcDeviceCard(
                     onClick = { execute(controller::chooseCool) },
                     enabled = controller.isIrAvailable,
                     modifier = Modifier.weight(1f)
-                ) { Text("COOL 24°") }
+                ) { Text("COOL") }
                 OutlinedButton(
                     onClick = { execute(controller::togglePower) },
                     enabled = controller.isIrAvailable,
