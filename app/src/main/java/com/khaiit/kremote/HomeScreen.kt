@@ -16,6 +16,8 @@ import com.khaiit.kremote.feature.wol.WolController
 import com.khaiit.kremote.feature.wol.WolDeviceCard
 import com.khaiit.kremote.feature.ac.DaikinAcController
 import com.khaiit.kremote.feature.ac.DaikinAcDeviceCard
+import com.khaiit.kremote.feature.ac.ToshibaAcController
+import com.khaiit.kremote.feature.ac.ToshibaAcDeviceCard
 
 @Composable
 fun HomeScreen(
@@ -25,6 +27,7 @@ fun HomeScreen(
     onFanOff: () -> Unit,
     wolController: WolController,
     daikinAcController: DaikinAcController,
+    toshibaAcController: ToshibaAcController,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -34,7 +37,6 @@ fun HomeScreen(
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-
         Text(
             text = "Khai RC",
             style = MaterialTheme.typography.headlineLarge
@@ -47,12 +49,10 @@ fun HomeScreen(
             onOff = onFanOff
         )
 
-        DaikinAcDeviceCard(
-            controller = daikinAcController
-        )
+        DaikinAcDeviceCard(controller = daikinAcController)
 
-        WolDeviceCard(
-            controller = wolController
-        )
+        ToshibaAcDeviceCard(controller = toshibaAcController)
+
+        WolDeviceCard(controller = wolController)
     }
 }

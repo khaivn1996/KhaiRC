@@ -7,8 +7,9 @@ import androidx.compose.runtime.remember
 import com.khaiit.kremote.core.ir.AndroidIrTransmitter
 import com.khaiit.kremote.core.network.AndroidWakeOnLanSender
 import com.khaiit.kremote.feature.ac.DaikinAcController
-import com.khaiit.kremote.feature.ac.DaikinAcDeviceCard
 import com.khaiit.kremote.feature.ac.DaikinAcSettings
+import com.khaiit.kremote.feature.ac.ToshibaAcController
+import com.khaiit.kremote.feature.ac.ToshibaAcSettings
 import com.khaiit.kremote.feature.fan.FanController
 import com.khaiit.kremote.feature.wol.WolController
 import com.khaiit.kremote.feature.wol.WolSettings
@@ -19,77 +20,46 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        /*
-         * Core implementations
-         */
-        val irTransmitter =
-            AndroidIrTransmitter(
-                applicationContext
-            )
-
+        /* Core implementations */
+        val irTransmitter = AndroidIrTransmitter(applicationContext)
         val wakeOnLanSender = AndroidWakeOnLanSender()
 
-        /*
-         * Persistent settings
-         */
-        val wolSettings =
-            WolSettings(
-                applicationContext
-            )
-
-        val daikinAcSettings =
-            DaikinAcSettings(
-                applicationContext
-            )
+        /* Persistent settings */
+        val wolSettings = WolSettings(applicationContext)
+        val daikinAcSettings = DaikinAcSettings(applicationContext)
+        val toshibaAcSettings = ToshibaAcSettings(applicationContext)
 
         setContent {
-
             KhaiRCTheme {
-
-                /*
-                 * Feature controllers
-                 */
-                val fanController = remember {
-                    FanController(
-                        irTransmitter
-                    )
-                }
-
+                /* Feature controllers */
+                val fanController = remember { FanController(irTransmitter) }
                 val wolController = remember {
                     WolController(
                         wakeOnLanSender = wakeOnLanSender,
                         settings = wolSettings
                     )
                 }
-
                 val daikinAcController = remember {
                     DaikinAcController(
                         irTransmitter = irTransmitter,
                         stateStore = daikinAcSettings
                     )
                 }
+                val toshibaAcController = remember {
+                    ToshibaAcController(
+                        irTransmitter = irTransmitter,
+                        stateStore = toshibaAcSettings
+                    )
+                }
 
-                /*
-                 * Dashboard
-                 */
                 HomeScreen(
-                    irAvailable =
-                        fanController.isIrAvailable,
-
-                    onPowerHigh =
-                        fanController::powerHigh,
-
-                    onSwing =
-                        fanController::swing,
-
-                    onFanOff =
-                        fanController::off,
-
-                    wolController =
-                        wolController,
-
-                    daikinAcController =
-                        daikinAcController
+                    irAvailable = fanController.isIrAvailable,
+                    onPowerHigh = fanController::powerHigh,
+                    onSwing = fanController::swing,
+                    onFanOff = fanController::off,
+                    wolController = wolController,
+                    daikinAcController = daikinAcController,
+                    toshibaAcController = toshibaAcController
                 )
             }
         }
