@@ -1,6 +1,7 @@
 package com.khaiit.kremote.feature.tuya
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -33,7 +34,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.SecureFlagPolicy
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
@@ -173,21 +177,23 @@ fun TuyaOc09DeviceCard(controller: TuyaOc09Controller, modifier: Modifier = Modi
 
 @Composable
 private fun TuyaSettingsDialog(controller: TuyaOc09Controller, onDismiss: () -> Unit) {
-    val initial = remember(controller) { controller.configurationSummary() }
-    var clientId by remember(controller) { mutableStateOf(initial.first) }
-    var secret by remember(controller) { mutableStateOf("") }
-    var deviceId by remember(controller) { mutableStateOf(initial.second) }
+    // Do not decrypt or pre-fill persisted credentials into a visible UI.
+    var clientId by remember { mutableStateOf("") }
+    var secret by remember { mutableStateOf("") }
+    var deviceId by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     val state = controller.state
 
     AlertDialog(
         onDismissRequest = { if (!state.busy) onDismiss() },
+        // Protect the Dialog's *own* Android window, not just the Activity window.
+        properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn),
         title = { Text("Cấu hình Tuya OC09") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
-                    "Tuya Cloud Singapore. Client Secret được mã hóa trên điện thoại; " +
-                        "không được nhập trong GitHub. Để trống Secret nếu muốn giữ giá trị cũ.",
+                    "Cấu hình được mã hóa trên điện thoại và không hiển thị lại. " +
+                        "Để trống trường bất kỳ để giữ giá trị đã lưu; cấu hình lần đầu cần nhập đủ 3 trường.",
                     style = MaterialTheme.typography.bodySmall
                 )
                 OutlinedTextField(
@@ -195,13 +201,16 @@ private fun TuyaSettingsDialog(controller: TuyaOc09Controller, onDismiss: () -> 
                     onValueChange = { clientId = it },
                     label = { Text("Client ID") },
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = secret,
                     onValueChange = { secret = it },
-                    label = { Text("Client Secret (để trống = giữ cũ)") },
+                    label = { Text("Client Secret") },
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -210,6 +219,8 @@ private fun TuyaSettingsDialog(controller: TuyaOc09Controller, onDismiss: () -> 
                     onValueChange = { deviceId = it },
                     label = { Text("Device ID OC09") },
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth()
                 )
                 state.message?.let { Text(it, color = MaterialTheme.colorScheme.error) }

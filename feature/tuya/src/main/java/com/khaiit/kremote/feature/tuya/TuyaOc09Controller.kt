@@ -27,19 +27,17 @@ class TuyaOc09Controller(
         }
     }
 
-    fun configurationSummary(): Pair<String, String> = runCatching {
-        configStore.load()?.let { it.clientId to it.deviceId } ?: ("" to "")
-    }.getOrDefault("" to "")
-
-    /** Empty secret means keep the existing value, if one exists. */
+    /** Blank fields preserve stored values. Never return saved credentials to Settings UI. */
     suspend fun saveConfiguration(clientId: String, secretInput: String, deviceId: String): Boolean {
         var success = false
         operationMutex.withLock {
             state = state.copy(busy = true, message = null)
             try {
-                val previous = if (secretInput.isBlank()) withContext(Dispatchers.IO) { configStore.load() } else null
+                val previous = withContext(Dispatchers.IO) { configStore.load() }
                 val credentials = TuyaCredentials(
-                    clientId.trim(), secretInput.takeIf { it.isNotBlank() } ?: previous?.clientSecret.orEmpty(), deviceId.trim()
+                    clientId = clientId.trim().ifBlank { previous?.clientId.orEmpty() },
+                    clientSecret = secretInput.takeIf { it.isNotBlank() } ?: previous?.clientSecret.orEmpty(),
+                    deviceId = deviceId.trim().ifBlank { previous?.deviceId.orEmpty() }
                 ).validated()
                 withContext(Dispatchers.IO) { configStore.save(credentials) }
                 repository.clearSession()

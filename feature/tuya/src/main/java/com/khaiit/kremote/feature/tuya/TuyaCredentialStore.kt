@@ -18,6 +18,9 @@ data class TuyaCredentials(val clientId: String, val clientSecret: String, val d
         require(deviceId.matches(Regex("[A-Za-z0-9_-]{6,128}"))) { "Device ID không hợp lệ" }
         return copy(clientId = clientId.trim(), deviceId = deviceId.trim())
     }
+
+    // Kotlin data classes otherwise print every field, including the Client Secret.
+    override fun toString(): String = "TuyaCredentials(<redacted>)"
 }
 
 interface TuyaConfigStore {

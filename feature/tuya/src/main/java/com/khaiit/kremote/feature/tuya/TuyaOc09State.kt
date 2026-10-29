@@ -25,7 +25,7 @@ data class TuyaOc09State(
     /** Never infer OFF from missing or stale data. */
     fun channelPower(code: String): Boolean? = if (verified) channelValues[code] else null
 
-    /** Read-only overall indicator, no master command exists in this OC09 instruction set. */
+    /** Master ON if any channel is ON; tapping it sends six switch commands in one POST. */
     val masterPower: Boolean?
         get() = if (verified && TuyaChannel.CODES.all(channelValues::containsKey)) {
             TuyaChannel.CODES.any { channelValues[it] == true }

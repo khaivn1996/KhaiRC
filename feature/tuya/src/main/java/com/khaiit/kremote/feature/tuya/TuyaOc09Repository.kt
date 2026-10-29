@@ -25,9 +25,10 @@ class TuyaCloudOc09Repository : TuyaOc09Repository {
 
     override suspend fun readStatus(credentials: TuyaCredentials): Map<String, Boolean> {
         val config = credentials.validated()
-        val token = auth.token(config) { path -> perform(config, "GET", path, null, null) }
         val path = "/v1.0/iot-03/devices/${config.deviceId}/status"
-        val result = perform(config, "GET", path, null, token).getJSONArray("result")
+        val result = authenticated(config, retryReadOnly = true) { token ->
+            perform(config, "GET", path, null, token)
+        }.getJSONArray("result")
         val states = mutableMapOf<String, Boolean>()
         for (i in 0 until result.length()) {
             val entry = result.getJSONObject(i)
@@ -48,7 +49,7 @@ class TuyaCloudOc09Repository : TuyaOc09Repository {
     }
 
     override suspend fun setAllPower(credentials: TuyaCredentials, enabled: Boolean) {
-        // Hardware support MUST be confirmed in Tuya API Explorer before enabling the UI.
+        // Six-switch batch was verified on the physical OC09 via Tuya API Explorer.
         sendPowerCommands(credentials, TuyaChannel.ALL.map { it.code }, enabled)
     }
 
@@ -59,14 +60,26 @@ class TuyaCloudOc09Repository : TuyaOc09Repository {
     ) {
         require(codes.isNotEmpty() && codes.distinct().size == codes.size && codes.all { it in TuyaChannel.CODES })
         val config = credentials.validated()
-        val token = auth.token(config) { path -> perform(config, "GET", path, null, null) }
         val path = "/v1.0/iot-03/devices/${config.deviceId}/commands"
         val commands = JSONArray()
         codes.forEach { code -> commands.put(JSONObject().put("code", code).put("value", enabled)) }
         val body = JSONObject().put("commands", commands).toString().toByteArray(Charsets.UTF_8)
-        val result = perform(config, "POST", path, body, token)
+        val result = authenticated(config, retryReadOnly = false) { token ->
+            perform(config, "POST", path, body, token)
+        }
         check(result.optBoolean("result", false)) { "Tuya không xác nhận tiếp nhận lệnh" }
     }
+
+    private suspend fun <T> authenticated(
+        config: TuyaCredentials,
+        retryReadOnly: Boolean,
+        request: suspend (String) -> T
+    ): T = TuyaTokenRecovery.call(
+        retryReadOnly = retryReadOnly,
+        getToken = { auth.token(config) { path -> perform(config, "GET", path, null, null) } },
+        clearToken = auth::invalidate,
+        request = request
+    )
 
     private suspend fun perform(
         config: TuyaCredentials,
@@ -114,6 +127,9 @@ class TuyaCloudOc09Repository : TuyaOc09Repository {
             if (status !in 200..299 || !json.optBoolean("success", false)) {
                 val code = json.opt("code")?.toString() ?: status.toString()
                 val message = json.optString("msg", "Tuya API không thành công").take(140)
+                if (token != null && TuyaTokenRecovery.isTokenErrorCode(code)) {
+                    throw TuyaTokenRejectedException(code, message)
+                }
                 throw IOException("Tuya $code: $message")
             }
             json
