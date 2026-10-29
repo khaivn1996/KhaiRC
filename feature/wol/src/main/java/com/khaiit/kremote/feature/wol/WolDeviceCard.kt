@@ -104,7 +104,7 @@ fun WolDeviceCard(
                 .onSuccess {
 
                     statusText =
-                        "Đã gửi tới ${config.targetIp}:9"
+                        "Đã gửi gói Wake tới ${config.targetIp}:9 · Chưa xác minh PC đã bật"
                 }
                 .onFailure { error ->
 
@@ -198,6 +198,11 @@ fun WolDeviceCard(
                             MaterialTheme.colorScheme
                                 .onSurfaceVariant
                     )
+                    Text(
+                        text = "Wake-on-LAN · Không đọc trạng thái PC",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
 
                 /*
@@ -242,7 +247,7 @@ fun WolDeviceCard(
                             Icons.Filled.PowerSettingsNew,
 
                         contentDescription =
-                            "Bật PC bằng Wake-on-LAN",
+                            "Gửi gói Wake-on-LAN đến PC",
 
                         tint =
                             MaterialTheme.colorScheme.onPrimary,

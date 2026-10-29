@@ -83,7 +83,7 @@ fun DaikinAcDeviceCard(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = if (controller.isIrAvailable) "IR ready" else "IR unavailable",
+                        text = if (controller.isIrAvailable) "IR · Trạng thái lưu trên máy" else "Không có bộ phát IR",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -105,7 +105,7 @@ fun DaikinAcDeviceCard(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.PowerSettingsNew,
-                        contentDescription = if (state.power) "Tắt Daikin AC" else "Bật Daikin AC",
+                        contentDescription = if (state.power) "Gửi lệnh tắt Daikin AC" else "Gửi lệnh bật Daikin AC",
                         tint = if (state.power) {
                             MaterialTheme.colorScheme.onError
                         } else {

@@ -76,11 +76,11 @@ fun TuyaOc09DeviceCard(controller: TuyaOc09Controller, modifier: Modifier = Modi
                         when {
                             !state.configured -> "Chưa cấu hình Tuya"
                             state.busy -> "Đang xử lý..."
-                            state.verified -> "Tuya Cloud · Đã đồng bộ"
-                            else -> "Tuya Cloud · Chưa xác minh"
+                            state.verified -> "Cloud · Xác minh lúc đồng bộ"
+                            else -> "Cloud · Chưa xác minh"
                         },
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (state.verified) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant
+                        color = if (state.configured && state.verified && !state.busy) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 IconButton(onClick = { showRename = true }, modifier = Modifier.size(40.dp)) {

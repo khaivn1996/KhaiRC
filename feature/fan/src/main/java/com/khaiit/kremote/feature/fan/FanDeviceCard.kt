@@ -65,9 +65,9 @@ fun FanDeviceCard(
 
                     Text(
                         text = if (irAvailable) {
-                            "IR sẵn sàng"
+                            "IR sẵn sàng · Chỉ gửi lệnh"
                         } else {
-                            "IR emitter not found"
+                            "Không có bộ phát IR"
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -85,7 +85,7 @@ fun FanDeviceCard(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.PowerSettingsNew,
-                        contentDescription = "Tắt quạt",
+                        contentDescription = "Gửi lệnh tắt quạt qua IR",
                         tint = MaterialTheme.colorScheme.onError,
                         modifier = Modifier.size(24.dp)
                     )

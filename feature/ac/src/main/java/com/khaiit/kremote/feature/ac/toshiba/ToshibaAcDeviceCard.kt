@@ -74,7 +74,7 @@ fun ToshibaAcDeviceCard(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = if (controller.isIrAvailable) "IR ready" else "IR unavailable",
+                        text = if (controller.isIrAvailable) "IR · Trạng thái lưu trên máy" else "Không có bộ phát IR",
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -95,7 +95,7 @@ fun ToshibaAcDeviceCard(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.PowerSettingsNew,
-                        contentDescription = if (state.power) "Tắt Toshiba AC" else "Bật Toshiba AC",
+                        contentDescription = if (state.power) "Gửi lệnh tắt Toshiba AC" else "Gửi lệnh bật Toshiba AC",
                         tint = if (state.power) {
                             MaterialTheme.colorScheme.onError
                         } else {
