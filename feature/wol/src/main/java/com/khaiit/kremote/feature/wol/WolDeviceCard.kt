@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,7 +14,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -25,7 +25,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -143,7 +142,9 @@ fun WolDeviceCard(
             modifier.fillMaxWidth(),
 
         shape =
-            RoundedCornerShape(24.dp),
+            RoundedCornerShape(20.dp),
+
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)),
 
         colors =
             CardDefaults.cardColors(
@@ -154,7 +155,7 @@ fun WolDeviceCard(
 
         Column(
             modifier =
-                Modifier.padding(20.dp)
+                Modifier.padding(16.dp)
         ) {
 
             /*
@@ -232,7 +233,7 @@ fun WolDeviceCard(
                             .size(48.dp)
                             .clip(CircleShape)
                             .background(
-                                MaterialTheme.colorScheme.error
+                                MaterialTheme.colorScheme.primary
                             )
                 ) {
 
@@ -244,7 +245,7 @@ fun WolDeviceCard(
                             "Bật PC bằng Wake-on-LAN",
 
                         tint =
-                            MaterialTheme.colorScheme.onError,
+                            MaterialTheme.colorScheme.onPrimary,
 
                         modifier =
                             Modifier.size(24.dp)
@@ -254,7 +255,7 @@ fun WolDeviceCard(
 
             Spacer(
                 modifier =
-                    Modifier.size(16.dp)
+                    Modifier.size(8.dp)
             )
 
             /*
@@ -268,7 +269,7 @@ fun WolDeviceCard(
                     Arrangement.End
             ) {
 
-                OutlinedButton(
+                IconButton(
                     onClick = {
 
                         macInput =
@@ -285,7 +286,8 @@ fun WolDeviceCard(
 
                         showConfigDialog =
                             true
-                    }
+                    },
+                    modifier = Modifier.size(48.dp)
                 ) {
 
                     Icon(
@@ -293,18 +295,11 @@ fun WolDeviceCard(
                             Icons.Filled.Edit,
 
                         contentDescription =
-                            null,
+                            "Chỉnh cấu hình Wake-on-LAN",
 
                         modifier =
                             Modifier.size(18.dp)
                     )
-
-                    Spacer(
-                        modifier =
-                            Modifier.width(8.dp)
-                    )
-
-                    Text("CHANGE")
                 }
             }
 

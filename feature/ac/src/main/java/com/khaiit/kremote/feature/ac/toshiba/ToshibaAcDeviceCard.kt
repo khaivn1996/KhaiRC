@@ -1,5 +1,6 @@
 package com.khaiit.kremote.feature.ac.toshiba
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -53,13 +54,12 @@ fun ToshibaAcDeviceCard(
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
+        shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
@@ -106,7 +106,10 @@ fun ToshibaAcDeviceCard(
             }
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(16.dp))
+                    .padding(horizontal = 10.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -120,6 +123,7 @@ fun ToshibaAcDeviceCard(
                     text = "${state.temperatureC} °C",
                     fontSize = 42.sp,
                     fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f),
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
@@ -131,7 +135,11 @@ fun ToshibaAcDeviceCard(
                 ) { Text("+", fontSize = 24.sp) }
             }
 
-            Text(text = "COOL • Fan ${state.fanSpeed.label} • Swing ${if (state.swing) "ON" else "OFF"}")
+            Text(
+                text = "COOL • Fan ${state.fanSpeed.label} • Swing ${if (state.swing) "ON" else "OFF"}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             Button(
                 onClick = { execute(controller::chooseCool) },

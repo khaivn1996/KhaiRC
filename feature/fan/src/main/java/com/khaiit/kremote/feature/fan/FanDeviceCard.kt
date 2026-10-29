@@ -1,5 +1,6 @@
 package com.khaiit.kremote.feature.fan
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -8,10 +9,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -20,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -31,11 +36,14 @@ fun FanDeviceCard(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
 
             // Header
@@ -51,7 +59,8 @@ fun FanDeviceCard(
 
                     Text(
                         text = "Quạt trần",
-                        style = MaterialTheme.typography.headlineSmall
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
                     )
 
                     Text(
@@ -60,7 +69,8 @@ fun FanDeviceCard(
                         } else {
                             "IR emitter not found"
                         },
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -96,10 +106,11 @@ fun FanDeviceCard(
                     Text("HIGH")
                 }
 
-                Button(
+                OutlinedButton(
                     onClick = onSwing,
                     enabled = irAvailable,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 ) {
                     Text("SWING")
                 }

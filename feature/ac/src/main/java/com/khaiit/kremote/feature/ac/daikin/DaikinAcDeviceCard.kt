@@ -1,5 +1,6 @@
 package com.khaiit.kremote.feature.ac.daikin
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -61,13 +62,12 @@ fun DaikinAcDeviceCard(
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
+        shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Same header and power-button semantics as Toshiba.
@@ -117,7 +117,10 @@ fun DaikinAcDeviceCard(
 
             // Align the temperature +/- controls with the Toshiba card.
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(16.dp))
+                    .padding(horizontal = 10.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -133,6 +136,7 @@ fun DaikinAcDeviceCard(
                     text = "${state.temperatureC} °C",
                     fontSize = 42.sp,
                     fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                     maxLines = 1
@@ -150,34 +154,33 @@ fun DaikinAcDeviceCard(
             Text(
                 text = "${state.mode.displayName()} • Fan ${state.fanSpeed.displayName()} • " +
                     "Swing ${if (state.swing) "ON" else "OFF"}",
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             // Daikin cycles through modes instead of selecting only COOL.
-            Button(
-                onClick = { execute(controller::cycleMode) },
-                enabled = controller.isIrAvailable,
-                modifier = Modifier.fillMaxWidth()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("MODE")
-            }
-
-            Text("Tốc độ quạt", fontWeight = FontWeight.SemiBold)
-            OutlinedButton(
-                onClick = { execute(controller::cycleFanSpeed) },
-                enabled = controller.isIrAvailable,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("SPEED")
-            }
-
-            Text("Hướng gió", fontWeight = FontWeight.SemiBold)
-            OutlinedButton(
-                onClick = { execute(controller::toggleSwing) },
-                enabled = controller.isIrAvailable,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(if (state.swing) "SWING OFF" else "SWING ON")
+                Button(
+                    onClick = { execute(controller::cycleMode) },
+                    enabled = controller.isIrAvailable,
+                    modifier = Modifier.weight(1f),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 8.dp)
+                ) { Text("MODE") }
+                OutlinedButton(
+                    onClick = { execute(controller::cycleFanSpeed) },
+                    enabled = controller.isIrAvailable,
+                    modifier = Modifier.weight(1f),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 8.dp)
+                ) { Text("SPEED") }
+                OutlinedButton(
+                    onClick = { execute(controller::toggleSwing) },
+                    enabled = controller.isIrAvailable,
+                    modifier = Modifier.weight(1f),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 8.dp)
+                ) { Text("SWING") }
             }
 
             statusText?.let { message ->

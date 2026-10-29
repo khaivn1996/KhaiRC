@@ -1,5 +1,6 @@
 package com.khaiit.kremote.feature.tuya
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -59,7 +60,8 @@ fun TuyaOc09DeviceCard(controller: TuyaOc09Controller, modifier: Modifier = Modi
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
     ) {
         Column(
@@ -78,7 +80,7 @@ fun TuyaOc09DeviceCard(controller: TuyaOc09Controller, modifier: Modifier = Modi
                             else -> "Tuya Cloud · Chưa xác minh"
                         },
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = if (state.verified) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 IconButton(onClick = { showRename = true }, modifier = Modifier.size(40.dp)) {
@@ -104,6 +106,7 @@ fun TuyaOc09DeviceCard(controller: TuyaOc09Controller, modifier: Modifier = Modi
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
                 color = MaterialTheme.colorScheme.surfaceContainerHigh
             ) {
                 Row(
@@ -144,6 +147,7 @@ fun TuyaOc09DeviceCard(controller: TuyaOc09Controller, modifier: Modifier = Modi
                         Surface(
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
                             color = MaterialTheme.colorScheme.surfaceContainerHigh
                         ) {
                             Column(
