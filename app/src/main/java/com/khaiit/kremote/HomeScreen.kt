@@ -18,6 +18,8 @@ import com.khaiit.kremote.feature.ac.daikin.DaikinAcController
 import com.khaiit.kremote.feature.ac.daikin.DaikinAcDeviceCard
 import com.khaiit.kremote.feature.ac.toshiba.ToshibaAcController
 import com.khaiit.kremote.feature.ac.toshiba.ToshibaAcDeviceCard
+import com.khaiit.kremote.feature.tuya.TuyaOc09Controller
+import com.khaiit.kremote.feature.tuya.TuyaOc09DeviceCard
 
 @Composable
 fun HomeScreen(
@@ -28,6 +30,7 @@ fun HomeScreen(
     wolController: WolController,
     daikinAcController: DaikinAcController,
     toshibaAcController: ToshibaAcController,
+    tuyaOc09Controller: TuyaOc09Controller,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -54,5 +57,7 @@ fun HomeScreen(
         ToshibaAcDeviceCard(controller = toshibaAcController)
 
         WolDeviceCard(controller = wolController)
+
+        TuyaOc09DeviceCard(controller = tuyaOc09Controller)
     }
 }

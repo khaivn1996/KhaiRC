@@ -41,6 +41,7 @@ dependencies {
     implementation(project(":feature:fan"))
     implementation(project(":feature:wol"))
     implementation(project(":feature:ac"))
+    implementation(project(":feature:tuya"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)

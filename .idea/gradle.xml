@@ -16,6 +16,7 @@
             <option value="$PROJECT_DIR$/feature" />
             <option value="$PROJECT_DIR$/feature/ac" />
             <option value="$PROJECT_DIR$/feature/fan" />
+            <option value="$PROJECT_DIR$/feature/tuya" />
             <option value="$PROJECT_DIR$/feature/wol" />
           </set>
         </option>
