@@ -11,9 +11,8 @@ interface XiaomiPlugRepository {
     suspend fun setPower(config: XiaomiPlugConfig, on: Boolean)
 }
 
-class XiaomiLanPlugRepository(
-    private val client: MiioUdpClient = MiioUdpClient()
-) : XiaomiPlugRepository {
+class XiaomiLanPlugRepository : XiaomiPlugRepository {
+    private val client = MiioUdpClient()
     override suspend fun readPower(config: XiaomiPlugConfig): Boolean = withContext(Dispatchers.IO) {
         val valid = config.validated()
         val params = JSONArray().put(

@@ -86,7 +86,7 @@ internal object MiioPacket {
     fun parseHello(message: ByteArray): MiioHello {
         require(message.size == 32) { "Phản hồi handshake miIO sai độ dài" }
         val b = ByteBuffer.wrap(message).order(ByteOrder.BIG_ENDIAN)
-        require(b.short.toInt() and 0xffff == MAGIC && b.short.toInt() and 0xffff == 32) {
+        require((b.short.toInt() and 0xffff) == MAGIC && (b.short.toInt() and 0xffff) == 32) {
             "Phản hồi handshake miIO không hợp lệ"
         }
         b.int // unknown
@@ -118,8 +118,8 @@ internal object MiioPacket {
             "Kích thước phản hồi miIO không hợp lệ"
         }
         val header = ByteBuffer.wrap(message, 0, HEADER).order(ByteOrder.BIG_ENDIAN)
-        require(header.short.toInt() and 0xffff == MAGIC) { "Sai magic miIO" }
-        require(header.short.toInt() and 0xffff == message.size) { "Sai chiều dài miIO" }
+        require((header.short.toInt() and 0xffff) == MAGIC) { "Sai magic miIO" }
+        require((header.short.toInt() and 0xffff) == message.size) { "Sai chiều dài miIO" }
         header.int
         require(header.int == expectedDeviceId) { "Sai miIO device id" }
         header.int
