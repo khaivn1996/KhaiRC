@@ -49,13 +49,15 @@ import com.khaiit.kremote.feature.ac.toshiba.ToshibaAcDeviceCard
 import com.khaiit.kremote.feature.fan.FanDeviceCard
 import com.khaiit.kremote.feature.tuya.TuyaOc09Controller
 import com.khaiit.kremote.feature.tuya.TuyaOc09DeviceCard
+import com.khaiit.kremote.feature.xiaomi.XiaomiPlugController
+import com.khaiit.kremote.feature.xiaomi.XiaomiPlugDeviceCard
 import com.khaiit.kremote.feature.wol.WolController
 import com.khaiit.kremote.feature.wol.WolDeviceCard
 
 private enum class HomeTab(val label: String, val subtitle: String, val icon: ImageVector) {
-    ALL("Tất cả", "5 thiết bị · IR / LAN / Cloud", Icons.Filled.Apps),
+    ALL("Tất cả", "6 thiết bị · IR / LAN / Cloud", Icons.Filled.Apps),
     IR("Hồng ngoại", "3 thiết bị điều khiển IR", Icons.Filled.SettingsRemote),
-    NETWORK("Mạng", "2 thiết bị · LAN / Cloud", Icons.Filled.Lan)
+    NETWORK("Mạng", "3 thiết bị · LAN / Cloud", Icons.Filled.Lan)
 }
 
 @Composable
@@ -68,6 +70,7 @@ fun HomeScreen(
     daikinAcController: DaikinAcController,
     toshibaAcController: ToshibaAcController,
     tuyaOc09Controller: TuyaOc09Controller,
+    xiaomiPlugController: XiaomiPlugController,
     modifier: Modifier = Modifier
 ) {
     // Tab navigation is UI-only: controllers stay in MainActivity and Tuya never
@@ -150,6 +153,7 @@ fun HomeScreen(
             if (selectedTab == HomeTab.ALL || selectedTab == HomeTab.NETWORK) {
                 WolDeviceCard(controller = wolController)
                 TuyaOc09DeviceCard(controller = tuyaOc09Controller)
+                XiaomiPlugDeviceCard(controller = xiaomiPlugController)
             }
         }
     }
