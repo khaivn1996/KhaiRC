@@ -42,3 +42,6 @@ project(":feature:ac").projectDir = file("feature/ac")
 
 include(":feature:tuya")
 project(":feature:tuya").projectDir = file("feature/tuya")
+
+include(":feature:xiaomi")
+project(":feature:xiaomi").projectDir = file("feature/xiaomi")

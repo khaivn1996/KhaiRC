@@ -42,6 +42,7 @@ dependencies {
     implementation(project(":feature:wol"))
     implementation(project(":feature:ac"))
     implementation(project(":feature:tuya"))
+    implementation(project(":feature:xiaomi"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)

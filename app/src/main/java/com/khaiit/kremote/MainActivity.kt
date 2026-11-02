@@ -18,10 +18,14 @@ import com.khaiit.kremote.feature.wol.WolSettings
 import com.khaiit.kremote.feature.tuya.TuyaOc09Controller
 import com.khaiit.kremote.feature.tuya.TuyaCredentialStore
 import com.khaiit.kremote.feature.tuya.TuyaCloudOc09Repository
+import com.khaiit.kremote.feature.xiaomi.AndroidXiaomiPlugConfigStore
+import com.khaiit.kremote.feature.xiaomi.XiaomiLanPlugRepository
+import com.khaiit.kremote.feature.xiaomi.XiaomiPlugController
 import com.khaiit.kremote.ui.theme.KhaiRCTheme
 
 class MainActivity : ComponentActivity() {
     private lateinit var tuyaOc09Controller: TuyaOc09Controller
+    private lateinit var xiaomiPlugController: XiaomiPlugController
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,6 +41,11 @@ class MainActivity : ComponentActivity() {
         tuyaOc09Controller = TuyaOc09Controller(
             TuyaCredentialStore(applicationContext),
             TuyaCloudOc09Repository()
+        )
+
+        xiaomiPlugController = XiaomiPlugController(
+            AndroidXiaomiPlugConfigStore(applicationContext),
+            XiaomiLanPlugRepository()
         )
 
         setContent {
@@ -70,7 +79,8 @@ class MainActivity : ComponentActivity() {
                     wolController = wolController,
                     daikinAcController = daikinAcController,
                     toshibaAcController = toshibaAcController,
-                    tuyaOc09Controller = tuyaOc09Controller
+                    tuyaOc09Controller = tuyaOc09Controller,
+                    xiaomiPlugController = xiaomiPlugController
                 )
             }
         }
@@ -79,5 +89,6 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         lifecycleScope.launch { tuyaOc09Controller.refresh() }
+        lifecycleScope.launch { xiaomiPlugController.refresh() }
     }
 }
