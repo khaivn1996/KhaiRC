@@ -1,5 +1,8 @@
 package com.khaiit.kremote
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,6 +17,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
@@ -23,6 +28,7 @@ import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Lan
 import androidx.compose.material.icons.filled.SettingsRemote
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ripple
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -30,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -37,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -177,20 +185,48 @@ private fun CompactDarkTechNavigationBar(
         ) {
             HomeTab.entries.forEach { tab ->
                 val active = selected == tab
+                val tabInteraction = remember(tab) { MutableInteractionSource() }
+                val tabPressed by tabInteraction.collectIsPressedAsState()
+                val tabScale by animateFloatAsState(
+                    targetValue = if (tabPressed) 0.96f else 1f,
+                    animationSpec = tween(durationMillis = 110),
+                    label = "nav_press_${tab.name}"
+                )
+                val tabBackground by animateColorAsState(
+                    targetValue = if (active) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+                        else Color.Transparent,
+                    animationSpec = tween(durationMillis = 180),
+                    label = "nav_background_${tab.name}"
+                )
+                val tabIconTint by animateColorAsState(
+                    targetValue = if (active) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                    animationSpec = tween(durationMillis = 180),
+                    label = "nav_icon_${tab.name}"
+                )
+                val tabTextTint by animateColorAsState(
+                    targetValue = if (active) MaterialTheme.colorScheme.onSurface
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                    animationSpec = tween(durationMillis = 180),
+                    label = "nav_text_${tab.name}"
+                )
                 Column(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
                         .padding(vertical = 5.dp)
+                        .graphicsLayer {
+                            scaleX = tabScale
+                            scaleY = tabScale
+                        }
                         .clip(RoundedCornerShape(14.dp))
-                        .background(
-                            if (active) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
-                            else Color.Transparent
-                        )
+                        .background(tabBackground)
                         .selectable(
                             selected = active,
+                            interactionSource = tabInteraction,
+                            indication = ripple(bounded = true),
                             role = Role.Tab,
-                            onClick = { onSelected(tab) }
+                            onClick = { if (!active) onSelected(tab) }
                         ),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
@@ -199,16 +235,14 @@ private fun CompactDarkTechNavigationBar(
                         imageVector = tab.icon,
                         contentDescription = null,
                         modifier = Modifier.size(22.dp),
-                        tint = if (active) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = tabIconTint
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
                         text = tab.label,
                         fontSize = 11.sp,
                         fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
-                        color = if (active) MaterialTheme.colorScheme.onSurface
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = tabTextTint,
                         maxLines = 1
                     )
                 }

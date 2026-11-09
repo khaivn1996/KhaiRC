@@ -1,7 +1,11 @@
 package com.khaiit.kremote.feature.fan
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,9 +25,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -35,6 +42,29 @@ fun FanDeviceCard(
     onOff: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Press feedback is visual only: IR onClick callbacks execute immediately.
+    val powerInteraction = remember { MutableInteractionSource() }
+    val highInteraction = remember { MutableInteractionSource() }
+    val swingInteraction = remember { MutableInteractionSource() }
+    val powerPressed by powerInteraction.collectIsPressedAsState()
+    val highPressed by highInteraction.collectIsPressedAsState()
+    val swingPressed by swingInteraction.collectIsPressedAsState()
+    val powerScale by animateFloatAsState(
+        targetValue = if (powerPressed && irAvailable) 0.96f else 1f,
+        animationSpec = tween(durationMillis = 110),
+        label = "fan_power_press"
+    )
+    val highScale by animateFloatAsState(
+        targetValue = if (highPressed && irAvailable) 0.96f else 1f,
+        animationSpec = tween(durationMillis = 110),
+        label = "fan_high_press"
+    )
+    val swingScale by animateFloatAsState(
+        targetValue = if (swingPressed && irAvailable) 0.96f else 1f,
+        animationSpec = tween(durationMillis = 110),
+        label = "fan_swing_press"
+    )
+
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -78,8 +108,13 @@ fun FanDeviceCard(
                 IconButton(
                     onClick = onOff,
                     enabled = irAvailable,
+                    interactionSource = powerInteraction,
                     modifier = Modifier
                         .size(48.dp)
+                        .graphicsLayer {
+                            scaleX = powerScale
+                            scaleY = powerScale
+                        }
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.error)
                 ) {
@@ -101,7 +136,11 @@ fun FanDeviceCard(
                 Button(
                     onClick = onPowerHigh,
                     enabled = irAvailable,
-                    modifier = Modifier.weight(1f)
+                    interactionSource = highInteraction,
+                    modifier = Modifier.weight(1f).graphicsLayer {
+                        scaleX = highScale
+                        scaleY = highScale
+                    }
                 ) {
                     Text("HIGH")
                 }
@@ -109,7 +148,11 @@ fun FanDeviceCard(
                 OutlinedButton(
                     onClick = onSwing,
                     enabled = irAvailable,
-                    modifier = Modifier.weight(1f),
+                    interactionSource = swingInteraction,
+                    modifier = Modifier.weight(1f).graphicsLayer {
+                        scaleX = swingScale
+                        scaleY = swingScale
+                    },
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 ) {
                     Text("SWING")
