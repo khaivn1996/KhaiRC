@@ -160,7 +160,12 @@ class HubController(
             return false
         }
         if (current == null || state.value.snapshot?.supports(command) != true) {
-            mutableState.value = state.value.copy(message = "Hub chưa sẵn sàng cho lệnh này. Hãy kiểm tra kết nối.")
+            // Preserve the warning when a previous IR command has an uncertain result.
+            if (state.value.message != UNCERTAIN_MESSAGE) {
+                mutableState.value = state.value.copy(
+                    message = "Hub chưa sẵn sàng cho lệnh này. Hãy kiểm tra kết nối."
+                )
+            }
             return false
         }
         return launchLocked("Đang gửi IR qua Hub…", sending = true) {

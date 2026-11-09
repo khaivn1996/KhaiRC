@@ -1,6 +1,10 @@
 package com.khaiit.kremote
 
 import android.os.Bundle
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.content.ContextCompat
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.lifecycle.lifecycleScope
@@ -8,6 +12,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.remember
 import com.khaiit.kremote.core.ir.AndroidIrTransmitter
 import com.khaiit.kremote.core.network.AndroidWakeOnLanSender
+import com.khaiit.kremote.core.network.HubClient
 import com.khaiit.kremote.feature.ac.daikin.DaikinAcController
 import com.khaiit.kremote.feature.ac.daikin.DaikinAcSettings
 import com.khaiit.kremote.feature.ac.toshiba.ToshibaAcController
@@ -22,6 +27,7 @@ import com.khaiit.kremote.ui.theme.KhaiRCTheme
 
 class MainActivity : ComponentActivity() {
     private lateinit var tuyaOc09Controller: TuyaOc09Controller
+    private lateinit var milifeController: MilifeController
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,6 +43,15 @@ class MainActivity : ComponentActivity() {
         tuyaOc09Controller = TuyaOc09Controller(
             TuyaCredentialStore(applicationContext),
             TuyaCloudOc09Repository()
+        )
+        milifeController = MilifeController(
+            api = HubClient(),
+            store = HubSettingsStore(applicationContext),
+            networkAllowed = {
+                Build.VERSION.SDK_INT < 37 || ContextCompat.checkSelfPermission(
+                    this, Manifest.permission.ACCESS_LOCAL_NETWORK
+                ) == PackageManager.PERMISSION_GRANTED
+            }
         )
 
         setContent {
@@ -70,14 +85,21 @@ class MainActivity : ComponentActivity() {
                     wolController = wolController,
                     daikinAcController = daikinAcController,
                     toshibaAcController = toshibaAcController,
-                    tuyaOc09Controller = tuyaOc09Controller
+                    tuyaOc09Controller = tuyaOc09Controller,
+                    milifeController = milifeController
                 )
             }
         }
     }
 
+    override fun onDestroy() {
+        milifeController.close()
+        super.onDestroy()
+    }
+
     override fun onStart() {
         super.onStart()
         lifecycleScope.launch { tuyaOc09Controller.refresh() }
+        milifeController.refresh()
     }
 }

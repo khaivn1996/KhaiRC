@@ -8,6 +8,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.time.Duration.Companion.milliseconds
 import org.json.JSONArray
 import org.json.JSONObject
 import org.json.JSONTokener
@@ -94,6 +95,11 @@ interface HubApi {
     suspend fun send(config: HubConfig, command: HubCommand): HubSendResult
 }
 
+/** Milife only exposes state reads. No write method exists on this interface. */
+interface MilifeReadApi {
+    suspend fun readMilife(config: HubConfig): Result<Boolean>
+}
+
 /** Only a fixed, safe code crosses the client boundary; never attach raw HTTP exceptions. */
 class HubClientException(val code: String) : IOException(code)
 
@@ -106,7 +112,7 @@ class HubClient(
         it.openConnection(Proxy.NO_PROXY) as HttpURLConnection
     },
     private val requestTimeoutMillis: Long = 8_000L
-) : HubApi {
+) : HubApi, MilifeReadApi {
     init { require(requestTimeoutMillis in 1..8_000L) }
 
     override suspend fun inspect(endpoint: HubEndpoint): Result<HubSnapshot> = try {
@@ -135,6 +141,16 @@ class HubClient(
         HubSendResult.Uncertain(null, safeFailure(error).code)
     }
 
+    override suspend fun readMilife(config: HubConfig): Result<Boolean> = try {
+        val response = exchange(config.endpoint, "/api/v1/devices/milife_plug_10a/state", apiKey = config.apiKey)
+        if (response.status != 200) throw HubClientException("http_${response.status}")
+        Result.success(HubContract.milifePower(HubJson.decode(response.body)))
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (error: Exception) {
+        Result.failure(safeFailure(error))
+    }
+
     private suspend fun get(endpoint: HubEndpoint, path: String): Map<String, Any?> {
         val response = exchange(endpoint, path)
         if (response.status != 200) throw HubClientException("http_${response.status}")
@@ -148,8 +164,13 @@ class HubClient(
         body: ByteArray? = null,
         apiKey: String? = null
     ): HubHttpResponse = supervisorScope {
-        require(path in setOf("/api/v1/health", "/api/v1/capabilities", "/api/v1/devices", "/api/v1/commands"))
-        require(if (path == "/api/v1/commands") body != null && apiKey != null else body == null && apiKey == null)
+        require(path in setOf("/api/v1/health", "/api/v1/capabilities", "/api/v1/devices",
+            "/api/v1/commands", "/api/v1/devices/milife_plug_10a/state"))
+        require(when (path) {
+            "/api/v1/commands" -> body != null && apiKey != null
+            "/api/v1/devices/milife_plug_10a/state" -> body == null && apiKey != null
+            else -> body == null && apiKey == null
+        })
         require(body == null || body.size <= 512)
         val lifetime = RequestConnection()
         val worker = async(Dispatchers.IO) {
@@ -164,11 +185,11 @@ class HubClient(
                 connection.setRequestProperty("Accept", "application/json")
                 connection.setRequestProperty("Accept-Encoding", "identity")
                 connection.setRequestProperty("Connection", "close")
+                if (apiKey != null) connection.setRequestProperty("X-API-Key", apiKey)
                 if (body != null) {
                     connection.doOutput = true
                     connection.setFixedLengthStreamingMode(body.size)
                     connection.setRequestProperty("Content-Type", "application/json")
-                    connection.setRequestProperty("X-API-Key", apiKey)
                     lifetime.ensureOpen()
                     connection.outputStream.use { it.write(body) }
                 }
@@ -184,7 +205,7 @@ class HubClient(
             }
         }
         try {
-            withTimeoutOrNull(requestTimeoutMillis) { worker.await() }
+            withTimeoutOrNull(requestTimeoutMillis.milliseconds) { worker.await() }
                 ?: throw HubClientException("timeout")
         } finally {
             // Cancellation of an await alone does not interrupt blocking socket I/O.
@@ -205,7 +226,25 @@ class HubClient(
     }
 }
 
-internal data class HubHttpResponse(val status: Int, val body: ByteArray)
+internal class HubHttpResponse(val status: Int, val body: ByteArray) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as HubHttpResponse
+
+        if (status != other.status) return false
+        if (!body.contentEquals(other.body)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = status
+        result = 31 * result + body.contentHashCode()
+        return result
+    }
+}
 
 private class RequestConnection {
     private val closed = AtomicBoolean(false)
@@ -245,6 +284,15 @@ private fun readBounded(stream: InputStream, ensureOpen: () -> Unit): ByteArray 
 
 /** Schema validation is pure Kotlin; native org.json decoding is verified on Android. */
 internal object HubContract {
+    fun milifePower(data: Map<String, Any?>): Boolean {
+        schema(data)
+        valid(data["device_id"] == "milife_plug_10a")
+        valid(data["transport"] == "miio_lan")
+        valid(data["state_verified"] == true)
+        valid(data["power"] is Boolean)
+        return data["power"] as Boolean
+    }
+
     fun snapshot(
         health: Map<String, Any?>,
         capabilities: Map<String, Any?>,
