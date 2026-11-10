@@ -1,0 +1,29 @@
+--- a/app/src/main/java/com/khaiit/kremote/HubHttpsProbeCard.kt
++++ b/app/src/main/java/com/khaiit/kremote/HubHttpsProbeCard.kt
+@@ -166,12 +166,21 @@
+             },
+             confirmButton = {
+                 TextButton(onClick = {
+-                    val endpoint = runCatching {
+-                        HubHttpsEndpoint(host.trim().lowercase(java.util.Locale.ROOT),
+-                            port.toInt(), fingerprint.trim())
+-                    }.getOrNull()
++                    // Report the exact input that failed; do not expose the fingerprint value.
++                    val validation = runCatching {
++                        HubHttpsEndpoint(
++                            host.trim().lowercase(java.util.Locale.ROOT),
++                            port.trim().toInt(),
++                            fingerprint.trim()
++                        )
++                    }
++                    val endpoint = validation.getOrNull()
+                     if (endpoint == null) {
+-                        error = "Hostname, cổng hoặc fingerprint SHA-256 chưa hợp lệ."
++                        error = when (val cause = validation.exceptionOrNull()) {
++                            is NumberFormatException -> "Cổng HTTPS phải là số từ 1 đến 65535."
++                            is IllegalArgumentException -> cause.message ?: "Cấu hình HTTPS không hợp lệ."
++                            else -> "Không kiểm tra được cấu hình HTTPS."
++                        }
+                     } else if (!preferences.save(endpoint)) {
+                         error = "Không thể lưu cấu hình HTTPS."
+                     } else {
