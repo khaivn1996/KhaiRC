@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import com.khaiit.kremote.core.ir.AndroidIrTransmitter
 import com.khaiit.kremote.core.network.AndroidWakeOnLanSender
 import com.khaiit.kremote.core.network.HubHttpsMilifeClient
+import com.khaiit.kremote.core.network.HubHttpsToshibaClient
 import com.khaiit.kremote.feature.ac.daikin.DaikinAcController
 import com.khaiit.kremote.feature.ac.daikin.DaikinAcSettings
 import com.khaiit.kremote.feature.ac.toshiba.ToshibaAcController
@@ -28,6 +29,7 @@ import com.khaiit.kremote.ui.theme.KhaiRCTheme
 class MainActivity : ComponentActivity() {
     private lateinit var tuyaOc09Controller: TuyaOc09Controller
     private lateinit var milifeController: MilifeController
+    private lateinit var toshibaHttpsFixController: ToshibaHttpsFixController
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,6 +49,18 @@ class MainActivity : ComponentActivity() {
         milifeController = MilifeController(
             api = HubHttpsMilifeClient { HttpsProbePreferences(applicationContext).read() },
             store = HubSettingsStore(applicationContext),
+            networkAllowed = {
+                Build.VERSION.SDK_INT < 37 || ContextCompat.checkSelfPermission(
+                    this, Manifest.permission.ACCESS_LOCAL_NETWORK
+                ) == PackageManager.PERMISSION_GRANTED
+            }
+        )
+
+        // Independent of phone-IR Toshiba controls and the read-only MiLife card.
+        toshibaHttpsFixController = ToshibaHttpsFixController(
+            api = HubHttpsToshibaClient(),
+            store = HubSettingsStore(applicationContext),
+            endpointProvider = { HttpsProbePreferences(applicationContext).read() },
             networkAllowed = {
                 Build.VERSION.SDK_INT < 37 || ContextCompat.checkSelfPermission(
                     this, Manifest.permission.ACCESS_LOCAL_NETWORK
@@ -85,6 +99,7 @@ class MainActivity : ComponentActivity() {
                     wolController = wolController,
                     daikinAcController = daikinAcController,
                     toshibaAcController = toshibaAcController,
+                    toshibaHttpsFixController = toshibaHttpsFixController,
                     tuyaOc09Controller = tuyaOc09Controller,
                     milifeController = milifeController
                 )
@@ -94,6 +109,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         milifeController.close()
+        toshibaHttpsFixController.close()
         super.onDestroy()
     }
 

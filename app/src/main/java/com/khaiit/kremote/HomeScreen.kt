@@ -75,6 +75,7 @@ fun HomeScreen(
     wolController: WolController,
     daikinAcController: DaikinAcController,
     toshibaAcController: ToshibaAcController,
+    toshibaHttpsFixController: ToshibaHttpsFixController,
     tuyaOc09Controller: TuyaOc09Controller,
     milifeController: MilifeController,
     modifier: Modifier = Modifier
@@ -160,6 +161,7 @@ fun HomeScreen(
                         onOff = onFanOff
                     )
                     ToshibaAcDeviceCard(controller = toshibaAcController)
+                    ToshibaHttpsFixCard(controller = toshibaHttpsFixController)
                     DaikinAcDeviceCard(controller = daikinAcController)
                 }
 
