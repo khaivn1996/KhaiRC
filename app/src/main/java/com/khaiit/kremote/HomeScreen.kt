@@ -53,7 +53,6 @@ import androidx.compose.ui.unit.sp
 import com.khaiit.kremote.feature.ac.daikin.DaikinAcController
 import com.khaiit.kremote.feature.ac.daikin.DaikinAcDeviceCard
 import com.khaiit.kremote.feature.ac.toshiba.ToshibaAcController
-import com.khaiit.kremote.feature.ac.toshiba.ToshibaAcDeviceCard
 import com.khaiit.kremote.feature.fan.FanDeviceCard
 import com.khaiit.kremote.feature.tuya.TuyaOc09Controller
 import com.khaiit.kremote.feature.tuya.TuyaOc09DeviceCard
@@ -75,7 +74,7 @@ fun HomeScreen(
     wolController: WolController,
     daikinAcController: DaikinAcController,
     toshibaAcController: ToshibaAcController,
-    toshibaHttpsFixController: ToshibaHttpsFixController,
+    toshibaHttpsControlsController: ToshibaHttpsControlsController,
     tuyaOc09Controller: TuyaOc09Controller,
     milifeController: MilifeController,
     modifier: Modifier = Modifier
@@ -160,8 +159,7 @@ fun HomeScreen(
                         onSwing = onSwing,
                         onOff = onFanOff
                     )
-                    ToshibaAcDeviceCard(controller = toshibaAcController)
-                    ToshibaHttpsFixCard(controller = toshibaHttpsFixController)
+                    ToshibaHttpsControlsCard(controller = toshibaHttpsControlsController)
                     DaikinAcDeviceCard(controller = daikinAcController)
                 }
 
