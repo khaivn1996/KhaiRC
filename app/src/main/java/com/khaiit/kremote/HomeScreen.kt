@@ -112,24 +112,22 @@ fun HomeScreen(
                         listOf(Color(0xFF0A101C), Color(0xFF0E192A))
                     )
                 )
-                .verticalScroll(currentScrollState)
-                .padding(horizontal = 16.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // Header section - Fixed (Sticky)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 10.dp),
+                    .padding(horizontal = 16.dp, vertical = 18.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
-                    Modifier
+                    modifier = Modifier
                         .width(4.dp)
                         .height(38.dp)
                         .clip(RoundedCornerShape(3.dp))
                         .background(MaterialTheme.colorScheme.primary)
                 )
-                Spacer(Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(12.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
                         "Khai RC",
@@ -144,22 +142,33 @@ fun HomeScreen(
                 }
             }
 
-            // Reuse the existing full-featured cards without changing IR/WOL/Tuya logic.
-            if (selectedTab == HomeTab.ALL || selectedTab == HomeTab.IR) {
-                FanDeviceCard(
-                    irAvailable = irAvailable,
-                    onPowerHigh = onPowerHigh,
-                    onSwing = onSwing,
-                    onOff = onFanOff
-                )
-                DaikinAcDeviceCard(controller = daikinAcController)
-                ToshibaAcDeviceCard(controller = toshibaAcController)
-            }
+            // Scrollable Content area
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(currentScrollState)
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 18.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Reuse the existing full-featured cards without changing IR/WOL/Tuya logic.
+                if (selectedTab == HomeTab.ALL || selectedTab == HomeTab.IR) {
+                    FanDeviceCard(
+                        irAvailable = irAvailable,
+                        onPowerHigh = onPowerHigh,
+                        onSwing = onSwing,
+                        onOff = onFanOff
+                    )
+                    ToshibaAcDeviceCard(controller = toshibaAcController)
+                    DaikinAcDeviceCard(controller = daikinAcController)
+                }
 
-            if (selectedTab == HomeTab.ALL || selectedTab == HomeTab.NETWORK) {
-                WolDeviceCard(controller = wolController)
-                TuyaOc09DeviceCard(controller = tuyaOc09Controller)
-                MilifeDeviceCard(controller = milifeController)
+                if (selectedTab == HomeTab.ALL || selectedTab == HomeTab.NETWORK) {
+                    WolDeviceCard(controller = wolController)
+                    TuyaOc09DeviceCard(controller = tuyaOc09Controller)
+                    MilifeDeviceCard(controller = milifeController)
+                    HubHttpsProbeCard()
+                }
             }
         }
     }

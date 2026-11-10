@@ -113,7 +113,7 @@ fun ToshibaAcDeviceCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                OutlinedButton(
+                Button(
                     onClick = { execute(controller::decreaseTemperature) },
                     enabled = controller.isIrAvailable && state.power &&
                         state.temperatureC > ToshibaAcState.MIN_TEMPERATURE_C
@@ -123,12 +123,12 @@ fun ToshibaAcDeviceCard(
                     text = "${state.temperatureC} °C",
                     fontSize = 42.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = if (state.power) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
                     modifier = Modifier.weight(1f),
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
 
-                OutlinedButton(
+                Button(
                     onClick = { execute(controller::increaseTemperature) },
                     enabled = controller.isIrAvailable && state.power &&
                         state.temperatureC < ToshibaAcState.MAX_TEMPERATURE_C
@@ -143,11 +143,11 @@ fun ToshibaAcDeviceCard(
 
             Button(
                 onClick = { execute(controller::chooseCool) },
-                enabled = controller.isIrAvailable,
+                enabled = controller.isIrAvailable && state.power,
                 modifier = Modifier.fillMaxWidth()
             ) { Text("COOL") }
 
-            Text(text = "Tốc độ quạt", fontWeight = FontWeight.SemiBold)
+            Text(text = "Tốc độ quạt", fontWeight = FontWeight.SemiBold,color = if (state.power) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f))
             ToshibaFanSpeed.entries.chunked(3).forEach { group ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -165,18 +165,18 @@ fun ToshibaAcDeviceCard(
                 }
             }
 
-            Text(text = "Hướng gió", fontWeight = FontWeight.SemiBold)
+            Text(text = "Hướng gió", fontWeight = FontWeight.SemiBold,color = if (state.power) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                OutlinedButton(
+                Button(
                     onClick = { execute(controller::fix) },
                     enabled = controller.isIrAvailable && state.power,
                     modifier = Modifier.weight(1f)
                 ) { Text("FIX") }
 
-                OutlinedButton(
+                Button(
                     onClick = { execute(controller::toggleSwing) },
                     enabled = controller.isIrAvailable && state.power,
                     modifier = Modifier.weight(1f)

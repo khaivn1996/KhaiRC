@@ -1,5 +1,6 @@
 package com.khaiit.kremote.feature.ac.daikin
 
+import android.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -124,9 +125,9 @@ fun DaikinAcDeviceCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                OutlinedButton(
+                Button(
                     onClick = { execute(controller::decreaseTemperature) },
-                    enabled = controller.isIrAvailable &&
+                    enabled = controller.isIrAvailable && state.power &&
                         state.temperatureC > DaikinAcState.MIN_TEMPERATURE_C
                 ) {
                     Text("−", fontSize = 24.sp)
@@ -136,15 +137,15 @@ fun DaikinAcDeviceCard(
                     text = "${state.temperatureC} °C",
                     fontSize = 42.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = if (state.power) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                     maxLines = 1
                 )
 
-                OutlinedButton(
+                Button(
                     onClick = { execute(controller::increaseTemperature) },
-                    enabled = controller.isIrAvailable &&
+                    enabled = controller.isIrAvailable && state.power &&
                         state.temperatureC < DaikinAcState.MAX_TEMPERATURE_C
                 ) {
                     Text("+", fontSize = 24.sp)
@@ -165,19 +166,19 @@ fun DaikinAcDeviceCard(
             ) {
                 Button(
                     onClick = { execute(controller::cycleMode) },
-                    enabled = controller.isIrAvailable,
+                    enabled = controller.isIrAvailable && state.power,
                     modifier = Modifier.weight(1f),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 8.dp)
                 ) { Text("MODE") }
-                OutlinedButton(
+                Button(
                     onClick = { execute(controller::cycleFanSpeed) },
-                    enabled = controller.isIrAvailable,
+                    enabled = controller.isIrAvailable && state.power,
                     modifier = Modifier.weight(1f),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 8.dp)
                 ) { Text("SPEED") }
-                OutlinedButton(
+                Button(
                     onClick = { execute(controller::toggleSwing) },
-                    enabled = controller.isIrAvailable,
+                    enabled = controller.isIrAvailable && state.power,
                     modifier = Modifier.weight(1f),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 8.dp)
                 ) { Text("SWING") }

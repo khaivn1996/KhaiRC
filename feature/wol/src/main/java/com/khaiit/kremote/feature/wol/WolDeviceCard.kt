@@ -42,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.clickable
 
 @Composable
 fun WolDeviceCard(
@@ -177,15 +178,44 @@ fun WolDeviceCard(
                         Modifier.weight(1f)
                 ) {
 
-                    Text(
-                        text = "PC",
+//                    Text(
+//                        text = "PC",
+//
+//                        style =
+//                            MaterialTheme.typography.titleLarge,
+//
+//                        fontWeight =
+//                            FontWeight.Bold
+//                    )
+                    Row(
+                        modifier =
+                            Modifier.fillMaxWidth(),
 
-                        style =
-                            MaterialTheme.typography.titleLarge,
+                        verticalAlignment =
+                            Alignment.CenterVertically
+                    ){
+                        Text(
+                            text = "PC",
 
-                        fontWeight =
-                            FontWeight.Bold
-                    )
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable {
+                                    macInput = config.macAddress
+                                    targetIpInput = config.targetIp
+                                    macError = null
+                                    targetIpError = null
+                                    showConfigDialog = true
+                                },
+
+                            style =
+                                MaterialTheme.typography.titleLarge,
+
+                            fontWeight =
+                                FontWeight.Bold
+
+
+                        )
+                    }
 
                     Text(
                         text =
@@ -237,9 +267,7 @@ fun WolDeviceCard(
                         Modifier
                             .size(48.dp)
                             .clip(CircleShape)
-                            .background(
-                                MaterialTheme.colorScheme.primary
-                            )
+                            .background(MaterialTheme.colorScheme.error)
                 ) {
 
                     Icon(
@@ -263,50 +291,50 @@ fun WolDeviceCard(
                     Modifier.size(8.dp)
             )
 
-            /*
-             * CHANGE
-             */
-            Row(
-                modifier =
-                    Modifier.fillMaxWidth(),
-
-                horizontalArrangement =
-                    Arrangement.End
-            ) {
-
-                IconButton(
-                    onClick = {
-
-                        macInput =
-                            config.macAddress
-
-                        targetIpInput =
-                            config.targetIp
-
-                        macError =
-                            null
-
-                        targetIpError =
-                            null
-
-                        showConfigDialog =
-                            true
-                    },
-                    modifier = Modifier.size(48.dp)
-                ) {
-
-                    Icon(
-                        imageVector =
-                            Icons.Filled.Edit,
-
-                        contentDescription =
-                            "Chỉnh cấu hình Wake-on-LAN",
-
-                        modifier =
-                            Modifier.size(18.dp)
-                    )
-                }
-            }
+//            /*
+//             * CHANGE
+//             */
+//            Row(
+//                modifier =
+//                    Modifier.fillMaxWidth(),
+//
+//                horizontalArrangement =
+//                    Arrangement.End
+//            ) {
+//
+//                IconButton(
+//                    onClick = {
+//
+//                        macInput =
+//                            config.macAddress
+//
+//                        targetIpInput =
+//                            config.targetIp
+//
+//                        macError =
+//                            null
+//
+//                        targetIpError =
+//                            null
+//
+//                        showConfigDialog =
+//                            true
+//                    },
+//                    modifier = Modifier.size(48.dp)
+//                ) {
+//
+//                    Icon(
+//                        imageVector =
+//                            Icons.Filled.Edit,
+//
+//                        contentDescription =
+//                            "Chỉnh cấu hình Wake-on-LAN",
+//
+//                        modifier =
+//                            Modifier.size(18.dp)
+//                    )
+//                }
+//            }
 
             /*
              * Status / debug.

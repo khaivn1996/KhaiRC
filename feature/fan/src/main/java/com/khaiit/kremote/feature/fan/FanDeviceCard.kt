@@ -145,15 +145,14 @@ fun FanDeviceCard(
                     Text("HIGH")
                 }
 
-                OutlinedButton(
+                Button(
                     onClick = onSwing,
                     enabled = irAvailable,
                     interactionSource = swingInteraction,
                     modifier = Modifier.weight(1f).graphicsLayer {
                         scaleX = swingScale
                         scaleY = swingScale
-                    },
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                    }
                 ) {
                     Text("SWING")
                 }
