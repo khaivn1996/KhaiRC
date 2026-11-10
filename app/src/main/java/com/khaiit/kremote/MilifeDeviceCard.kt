@@ -75,7 +75,7 @@ fun MilifeDeviceCard(controller: MilifeController, modifier: Modifier = Modifier
                 Column(modifier = Modifier.weight(1f)) {
                     Text("Milife 10A", style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold)
-                    Text("ESP32 Hub · miIO LAN · Chỉ đọc", style = MaterialTheme.typography.bodySmall,
+                    Text("ESP32 Hub · HTTPS → miIO LAN · Chỉ đọc", style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 IconButton(onClick = { showSettings = true }, enabled = !state.busy,

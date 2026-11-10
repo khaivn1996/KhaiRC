@@ -40,7 +40,7 @@ import androidx.core.content.ContextCompat
 import kotlinx.coroutines.launch
 
 /** Contains no API key; fields are public host/port/certificate fingerprint only. */
-private class HttpsProbePreferences(context: Context) {
+internal class HttpsProbePreferences(context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences("hub_https_probe_v1", Context.MODE_PRIVATE)
 
     fun read(): HubHttpsEndpoint? = runCatching {
@@ -103,8 +103,8 @@ fun HubHttpsProbeCard(modifier: Modifier = Modifier) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("HTTPS Hub · Stage 1", style = MaterialTheme.typography.titleLarge)
-            Text("Chỉ kiểm tra TLS và health; không gửi API key, không điều khiển thiết bị.",
+            Text("HTTPS Hub · Stage 2A", style = MaterialTheme.typography.titleLarge)
+            Text("Probe TLS/health không gửi key; cấu hình này còn dùng đọc MiLife qua HTTPS.",
                 style = MaterialTheme.typography.bodySmall)
             Text(configured?.let { "Đích: ${it.host}:${it.port}" } ?: "Chưa cấu hình HTTPS",
                 style = MaterialTheme.typography.bodySmall)

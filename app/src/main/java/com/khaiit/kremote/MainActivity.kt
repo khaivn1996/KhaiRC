@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.remember
 import com.khaiit.kremote.core.ir.AndroidIrTransmitter
 import com.khaiit.kremote.core.network.AndroidWakeOnLanSender
-import com.khaiit.kremote.core.network.HubClient
+import com.khaiit.kremote.core.network.HubHttpsMilifeClient
 import com.khaiit.kremote.feature.ac.daikin.DaikinAcController
 import com.khaiit.kremote.feature.ac.daikin.DaikinAcSettings
 import com.khaiit.kremote.feature.ac.toshiba.ToshibaAcController
@@ -45,7 +45,7 @@ class MainActivity : ComponentActivity() {
             TuyaCloudOc09Repository()
         )
         milifeController = MilifeController(
-            api = HubClient(),
+            api = HubHttpsMilifeClient { HttpsProbePreferences(applicationContext).read() },
             store = HubSettingsStore(applicationContext),
             networkAllowed = {
                 Build.VERSION.SDK_INT < 37 || ContextCompat.checkSelfPermission(

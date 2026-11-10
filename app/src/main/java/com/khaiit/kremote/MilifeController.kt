@@ -66,7 +66,7 @@ class MilifeController(
             permissionDenied()
             return
         }
-        state = state.copy(busy = true, power = null, message = "Đang đọc trạng thái qua LAN…")
+        state = state.copy(busy = true, power = null, message = "Đang đọc trạng thái qua HTTPS…")
         scope.launch {
             try {
                 val result = api.readMilife(config)
@@ -78,6 +78,9 @@ class MilifeController(
                                 )?.code
 
                         val detail = when (code) {
+                            "https_not_configured" -> "Chưa cấu hình HTTPS Hub; vào card HTTPS Hub để thiết lập."
+                            "tls_validation_failed" -> "Chứng chỉ TLS không hợp lệ; kiểm tra fingerprint."
+                            "redirect_blocked" -> "HTTPS trả chuyển hướng; đã chặn."
                             "http_401" -> "API key bị Hub từ chối (401)"
                             "http_404" -> "Không tìm thấy API Milife (404)"
                             "http_502" -> "Hub không đọc được Milife (502)"
