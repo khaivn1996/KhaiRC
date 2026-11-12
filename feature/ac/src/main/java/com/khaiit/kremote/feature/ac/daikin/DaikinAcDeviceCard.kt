@@ -1,6 +1,5 @@
 package com.khaiit.kremote.feature.ac.daikin
 
-import android.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -20,7 +19,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import com.khaiit.kremote.feature.ac.ui.PressFeedbackIconButton as IconButton
 import androidx.compose.material3.MaterialTheme
-import com.khaiit.kremote.feature.ac.ui.PressFeedbackOutlinedButton as OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
