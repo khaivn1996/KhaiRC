@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -30,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -116,8 +118,11 @@ fun ToshibaAcDeviceCard(
                 Button(
                     onClick = { execute(controller::decreaseTemperature) },
                     enabled = controller.isIrAvailable && state.power &&
-                        state.temperatureC > ToshibaAcState.MIN_TEMPERATURE_C
-                ) { Text("−", fontSize = 24.sp) }
+                            state.temperatureC > ToshibaAcState.MIN_TEMPERATURE_C,
+                    modifier = Modifier.width(52.dp) // Cố định chiều rộng nút trái
+                ) {
+                    Text("−", fontSize = 24.sp)
+                }
 
                 Text(
                     text = "${state.temperatureC} °C",
@@ -125,14 +130,18 @@ fun ToshibaAcDeviceCard(
                     fontWeight = FontWeight.Bold,
                     color = if (state.power) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
                     modifier = Modifier.weight(1f),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    maxLines = 1 // Giữ chữ luôn nằm trên 1 dòng
                 )
 
                 Button(
                     onClick = { execute(controller::increaseTemperature) },
                     enabled = controller.isIrAvailable && state.power &&
-                        state.temperatureC < ToshibaAcState.MAX_TEMPERATURE_C
-                ) { Text("+", fontSize = 24.sp) }
+                            state.temperatureC < ToshibaAcState.MAX_TEMPERATURE_C,
+                    modifier = Modifier.width(52.dp) // Cố định chiều rộng nút phải
+                ) {
+                    Text("+", fontSize = 24.sp)
+                }
             }
 
             Text(

@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.khaiit.kremote.feature.ac.toshiba.ToshibaAcState
@@ -79,8 +80,12 @@ fun ToshibaHttpsControlsCard(controller: ToshibaHttpsControlsController, modifie
                     enabled = canSend && model.power && model.temperatureC > ToshibaAcState.MIN_TEMPERATURE_C) {
                     Text("−")
                 }
-                Text("${model.temperatureC} °C", style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.weight(1f))
+                Text(
+                    text = "${model.temperatureC} °C",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center
+                )
                 Button(onClick = { send(controller::increaseTemperature) },
                     enabled = canSend && model.power && model.temperatureC < ToshibaAcState.MAX_TEMPERATURE_C) {
                     Text("+")
