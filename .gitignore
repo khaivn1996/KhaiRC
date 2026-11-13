@@ -25,3 +25,5 @@ build/
 
 # Local config
 local.properties
+# Patch files are never committed
+*.patch
