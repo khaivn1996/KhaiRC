@@ -27,3 +27,6 @@ build/
 local.properties
 # Patch files are never committed
 *.patch
+
+# Agent working plan (not committed)
+/docs/PLAN.md
