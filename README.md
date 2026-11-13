@@ -1,8 +1,8 @@
 # Khai RC
 
-**Khai RC** là ứng dụng điều khiển thiết bị trong nhà dành cho Android, kết hợp **hồng ngoại (IR)**, **Wake-on-LAN (WOL)** và **Tuya Cloud** trong một giao diện thống nhất. Ứng dụng được viết bằng **Kotlin**, **Jetpack Compose** và **Material 3**, theo cấu trúc Gradle đa module.
+**Khai RC** là ứng dụng điều khiển thiết bị trong nhà dành cho Android, kết hợp **hồng ngoại (IR)**, **Wake-on-LAN (WOL)**, **Tuya Cloud** và **ESP32-S3 Hub qua HTTPS** trong một giao diện thống nhất. Ứng dụng được viết bằng **Kotlin**, **Jetpack Compose** và **Material 3**, theo cấu trúc Gradle đa module.
 
-> **Trạng thái dự án:** Các chức năng IR, WOL và điều khiển Rạng Đông OC09 đã được kiểm thử trên thiết bị thực tế. Giao diện OC09 dạng compact với tên ổ cắm tùy chỉnh đã được kiểm thử trên bản local; nếu xem `main` trước khi commit UI, giao diện có thể vẫn là phiên bản cũ.
+> **Trạng thái dự án:** Các chức năng IR, WOL và điều khiển Rạng Đông OC09 đã được kiểm thử trên thiết bị thực tế. Phần ESP32 Hub (điều khiển Toshiba AC, đọc trạng thái Milife) đang được phát triển theo từng giai đoạn; xem `docs/HUB_HTTPS_ANDROID_STAGE1.md`.
 
 ## 1. Thiết bị và chức năng
 
@@ -10,11 +10,13 @@
 | --- | --- | --- |
 | Quạt trần | IR trên điện thoại | HIGH, SWING, OFF |
 | Daikin AC (`BRC4C153`) | IR trên điện thoại | Power, nhiệt độ, chế độ, tốc độ quạt, swing |
-| Toshiba AC | IR trên điện thoại | Power, COOL, nhiệt độ, FAN, FIX, SWING |
+| Toshiba AC | ESP32 Hub qua HTTPS → IR 38 kHz | Power, COOL, nhiệt độ, FAN, FIX, SWING |
 | PC | Wake-on-LAN (UDP) | Gửi magic packet để đánh thức máy; không xác nhận trạng thái bật/tắt thực |
 | Rạng Đông / Ralli OC09 | Tuya Cloud, Singapore | Bật/tắt 5 ổ cắm và USB, Power tổng, đọc trạng thái Cloud, đổi tên ổ cắm |
+| Milife 10A | ESP32 Hub qua HTTPS → miIO LAN | **Chỉ đọc** trạng thái nguồn; nút BẬT/TẮT đang tạm khóa |
+| ESP32 Hub | HTTPS (chứng chỉ tự ký, pin SHA-256) | Card “HTTPS Hub · Stage 1”: kiểm tra `GET /api/v1/health` |
 
-**Lưu ý về trạng thái:** Điều khiển IR là một chiều, nên trạng thái hiển thị trên ứng dụng có thể khác với thiết bị thực. Wake-on-LAN chỉ xác nhận quá trình gửi gói tin, không xác nhận PC đã bật. Riêng OC09 có thể đọc lại trạng thái qua Cloud.
+**Lưu ý về trạng thái:** Điều khiển IR là một chiều, nên trạng thái hiển thị trên ứng dụng có thể khác với thiết bị thực. Điều này cũng đúng với Toshiba AC qua Hub: Hub chỉ xác nhận đã phát IR, trạng thái trên app chỉ là ước lượng. Nếu không rõ lệnh đã phát hay chưa (timeout, phản hồi lạ), card Toshiba khóa thao tác cho đến khi người dùng xác nhận đã kiểm tra máy lạnh. Wake-on-LAN chỉ xác nhận quá trình gửi gói tin, không xác nhận PC đã bật. OC09 (qua Cloud) và Milife (qua Hub) có thể đọc lại trạng thái thực.
 
 ## 2. Giao diện Rạng Đông OC09
 
@@ -64,6 +66,8 @@ Build và chạy kiểm thử từ PowerShell trên Windows:
 ```powershell
 .\gradlew.bat :feature:tuya:testDebugUnitTest
 .\gradlew.bat :feature:ac:testDebugUnitTest
+.\gradlew.bat :core:network:testDebugUnitTest
+.\gradlew.bat :app:testDebugUnitTest
 .\gradlew.bat :app:assembleDebug
 ```
 
@@ -93,10 +97,18 @@ Khai RC gọi Tuya Cloud trực tiếp từ Android, **không cần** OpenWrt, E
 - **POST điều khiển:** **không tự gửi lại**, tránh nguy cơ phát lệnh bật/tắt trùng; hãy Refresh để kiểm tra kết quả thực trước khi thao tác tiếp.
 - Khi Cloud hoặc mạng lỗi, ứng dụng báo trạng thái chưa xác minh, không giả định thiết bị đã bật/tắt thành công.
 
+## 4a. Cấu hình ESP32 Hub (Toshiba AC, Milife)
+
+1. Trong card **HTTPS Hub · Stage 1** (tab Mạng), nhập hostname DDNS hoặc IPv4 LAN/VPN, cổng HTTPS và **SHA-256 fingerprint** của chứng chỉ tự ký trên ESP32. Cách lấy fingerprint xem `docs/HUB_HTTPS_ANDROID_STAGE1.md`.
+2. Trong card **Milife 10A**, mở cấu hình **Kết nối ESP32 Hub**, nhập IP LAN của Hub và `HUB_API_KEY` (64 ký tự ASCII). Để trống ô key khi sửa thì giữ key đã lưu.
+3. Card Toshiba AC dùng chung hai cấu hình trên. Trên Android 17 (SDK 37) trở lên, ứng dụng cần quyền truy cập mạng LAN (`ACCESS_LOCAL_NETWORK`).
+
+Mọi kết nối Hub chỉ tin **đúng** chứng chỉ đã pin, vẫn kiểm tra hostname, không chuyển sang HTTP, không theo redirect và không tự gửi lại lệnh.
+
 ## 5. Bảo mật và dữ liệu người dùng
 
 - **Không hardcode** Client ID, Client Secret, Device ID thực hay access token trong source code, Gradle, resources, README hoặc file đưa lên GitHub.
-- Credentials được mã hóa bằng **AES-GCM**, với khóa được quản lý bằng **Android Keystore**, rồi lưu trong SharedPreferences riêng `tuya_oc09_secure`.
+- Credentials được mã hóa bằng **AES-GCM**, với khóa được quản lý bằng **Android Keystore**, rồi lưu trong SharedPreferences riêng `tuya_oc09_secure`. IP và API key của ESP32 Hub được mã hóa theo cùng cách trong `hub_secure_v1`.
 - File lưu credentials được loại trừ khỏi **cloud backup** và **device-to-device transfer** thông qua `backup_rules.xml` và `data_extraction_rules.xml`.
 - Màn hình cấu hình Tuya không điền sẵn thông tin đã lưu, dùng trường nhập che ký tự và áp dụng `SecureFlagPolicy.SecureOn` để hạn chế chụp màn hình nội dung cấu hình.
 - Đối tượng `TuyaCredentials` được thiết kế để không tự in giá trị thật khi gọi `toString()`.
@@ -110,13 +122,14 @@ Nếu nghi ngờ credentials bị lộ, cần thu hồi/thay mới thông tin t�
 
 ```text
 KhaiRC/
-├── app/                 # MainActivity, HomeScreen, khởi tạo các controller
+├── app/                 # MainActivity, HomeScreen, khởi tạo controller; card/controller ESP32 Hub (Toshiba HTTPS, Milife, HTTPS probe)
 ├── core/
 │   ├── ir/              # Phát hồng ngoại bằng phần cứng Android
-│   └── network/         # Gửi Wake-on-LAN UDP
+│   └── network/         # Wake-on-LAN UDP và các client HTTPS tới ESP32 Hub
+├── docs/                # Ghi chú triển khai Hub HTTPS
 ├── feature/
 │   ├── fan/             # Quạt trần IR
-│   ├── ac/              # Điều hòa Daikin và Toshiba
+│   ├── ac/              # Điều hòa Daikin và Toshiba (IR trên điện thoại)
 │   ├── wol/             # Giao diện/cấu hình WOL
 │   └── tuya/            # OC09: Cloud API, token, Keystore, trạng thái, UI, tên tùy chỉnh
 ├── gradle/              # Version catalog và Gradle Wrapper
@@ -157,9 +170,9 @@ Phần IR/WOL hoạt động độc lập với `:feature:tuya`. Mục tiêu khi
 
 ## 8. Phạm vi hiện tại và hướng phát triển
 
-- **Đã triển khai:** điều khiển IR trên điện thoại, WOL và Rạng Đông OC09 qua Tuya Cloud.
-- **Chưa triển khai:** điều khiển IR qua ESP32-S3, hub local-first, Tuya local hoặc tích hợp các thiết bị Xiaomi Home.
-- **Định hướng nghiên cứu:** ESP32-S3 làm bộ phát IR qua Wi-Fi để không phụ thuộc IR blaster của điện thoại, nhưng chưa thay đổi kiến trúc Tuya Cloud hiện hành.
+- **Đã triển khai:** điều khiển IR trên điện thoại (quạt trần, Daikin), WOL, Rạng Đông OC09 qua Tuya Cloud; Toshiba AC qua ESP32 Hub (HTTPS); đọc trạng thái Milife 10A qua Hub.
+- **Chưa triển khai:** điều khiển nguồn Milife, chuyển quạt trần/Daikin sang Hub, truy cập Hub qua Internet (chưa mở cổng WAN), Tuya local.
+- **Định hướng:** mở rộng ESP32-S3 Hub thành bộ phát IR qua Wi-Fi để không phụ thuộc IR blaster của điện thoại, nhưng chưa thay đổi kiến trúc Tuya Cloud hiện hành.
 
 ---
 
