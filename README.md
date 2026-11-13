@@ -61,15 +61,13 @@ git clone https://github.com/khaivn1996/KhaiRC.git
 cd KhaiRC
 ```
 
-Build và chạy kiểm thử từ PowerShell trên Windows:
+Build và chạy toàn bộ unit test từ PowerShell trên Windows:
 
 ```powershell
-.\gradlew.bat :feature:tuya:testDebugUnitTest
-.\gradlew.bat :feature:ac:testDebugUnitTest
-.\gradlew.bat :core:network:testDebugUnitTest
-.\gradlew.bat :app:testDebugUnitTest
-.\gradlew.bat :app:assembleDebug
+.\gradlew.bat testDebugUnitTest :app:assembleDebug
 ```
+
+Lệnh có ghi log dùng cho agent và cách chạy riêng một test nằm ở `AGENTS.md` §4.
 
 Sau khi build thành công, có thể cài `app/build/outputs/apk/debug/app-debug.apk` lên điện thoại. Nếu cần kiểm tra tình trạng Git trước khi commit:
 
@@ -120,47 +118,23 @@ Nếu nghi ngờ credentials bị lộ, cần thu hồi/thay mới thông tin t�
 
 ## 6. Kiến trúc mã nguồn
 
-```text
-KhaiRC/
-├── app/                 # MainActivity, HomeScreen, khởi tạo controller; card/controller ESP32 Hub (Toshiba HTTPS, Milife, HTTPS probe)
-├── core/
-│   ├── ir/              # Phát hồng ngoại bằng phần cứng Android
-│   └── network/         # Wake-on-LAN UDP và các client HTTPS tới ESP32 Hub
-├── docs/                # Ghi chú triển khai Hub HTTPS
-├── feature/
-│   ├── fan/             # Quạt trần IR
-│   ├── ac/              # Điều hòa Daikin và Toshiba (IR trên điện thoại)
-│   ├── wol/             # Giao diện/cấu hình WOL
-│   └── tuya/            # OC09: Cloud API, token, Keystore, trạng thái, UI, tên tùy chỉnh
-├── gradle/              # Version catalog và Gradle Wrapper
-└── settings.gradle.kts  # Đăng ký module
-```
+Dự án gồm các module Gradle `:app`, `:core:ir`, `:core:network`, `:feature:fan`, `:feature:ac`, `:feature:wol`, `:feature:tuya`. Các module feature độc lập với nhau; khi thay đổi UI hoặc Cloud API, mục tiêu là **không làm thay đổi hành vi của các module đang hoạt động ổn định**.
 
-Luồng điều khiển OC09:
+Chi tiết kỹ thuật (module, vòng đời app, luồng điều khiển, giao tiếp ngoài, dữ liệu lưu trữ) nằm ở `docs/PROJECT_SPEC.md`, là nguồn sự thật kỹ thuật của dự án:
 
-```text
-TuyaOc09DeviceCard (Jetpack Compose)
-            |
-            v
-TuyaOc09Controller (trạng thái, khóa thao tác, xác nhận lệnh)
-            |
-            v
-TuyaCloudOc09Repository (REST API + HMAC-SHA256 + token recovery)
-            |
-            v
-Tuya Cloud Singapore <--> Rạng Đông OC09
+- §3: cấu trúc module.
+- §4: vòng đời app.
+- §5: từng module.
+- §6: Tuya Cloud và API Hub.
+- §7: SharedPreferences.
 
-TuyaCredentialStore (Android Keystore) --> credentials cho repository
-TuyaOc09LabelStore (SharedPreferences riêng) --> tên hiển thị trên card
-```
-
-Phần IR/WOL hoạt động độc lập với `:feature:tuya`. Mục tiêu khi thay đổi UI hoặc Cloud API là **không làm thay đổi hành vi của các module đang hoạt động ổn định**.
+Đọc theo mục bằng `python tools/spec.py <mục>`. Quy trình làm việc với agent (Claude CLI, Codex) xem `docs/AGENT_WORKFLOW.md`.
 
 ## 7. Kiểm thử đề xuất trước khi commit
 
 | Nhóm | Cần xác minh |
 | --- | --- |
-| Build | `:feature:tuya:testDebugUnitTest`, `:feature:ac:testDebugUnitTest`, `:app:assembleDebug` thành công |
+| Build | Unit test mọi module (`testDebugUnitTest`) và `:app:assembleDebug` thành công |
 | OC09 từng kênh | Sáu nút Power hoạt động và trạng thái được cập nhật tự động |
 | Power tổng | Bật/tắt đủ sáu kênh bằng một POST, trạng thái đọc lại chính xác |
 | Đổi tên | Lưu tên, mở lại ứng dụng vẫn còn; để trống sẽ trở lại tên mặc định |

@@ -6,6 +6,9 @@ Trước khi thêm hoặc sửa tính năng, đọc các mục liên quan của 
 Sau khi hoàn thành và commit một tính năng, chạy `$docs` để đồng bộ đặc tả.
 <!-- docs-skill:end -->
 
+## 0. Thứ tự nguồn sự thật
+Code tại HEAD > `AGENTS.md` (quy tắc bắt buộc) > `docs/PROJECT_SPEC.md` (hiện trạng kỹ thuật: module, API, prefs, quy ước) > `README.md` (hướng dẫn người dùng: cài đặt, cấu hình, bảo mật, kịch bản thử). Không lấy chi tiết kỹ thuật từ README. Tài liệu mâu thuẫn code thì tin code và sửa (hoặc báo) tài liệu sai.
+
 ## 1. Bảo mật & Giới hạn quét file
 - **TUYỆT ĐỐI KHÔNG** đọc, in hoặc đưa vào ngữ cảnh: `*.jks`, `*.keystore`, `keystore.properties`, `.env`, giá trị thật của Tuya Client ID/Secret/Device ID, `HUB_API_KEY`.
 - **KHÔNG** quét/tìm kiếm trong `build/`, `**/build/`, `.gradle/`, `.kotlin/`, `.idea/`, `.git/`, `*.patch`, `*.apk` (ngoại lệ: đọc đúng `build/gradle.log` theo §4).

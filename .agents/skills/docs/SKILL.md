@@ -101,4 +101,5 @@ Sau khi hoàn thành và commit một tính năng, chạy `$docs` để đồng 
 ~~~
 
 3. **Tự kiểm tra:** `python tools/spec.py` in mục lục bình thường; mọi identifier mới ghi vào spec tìm thấy bằng `git grep -n "<tên>" -- app core feature`; không có secret thật; front matter khớp HEAD.
-4. **Báo cáo** (≤ ~10 dòng): chế độ và lý do, khoảng commit (`<last7>..<head7>`), mục đã sửa, mục mới ở §10 cần xác nhận, nhắc commit file spec.
+4. **Đối chiếu README (chỉ đọc, không sửa):** README là hướng dẫn người dùng; spec là nguồn sự thật kỹ thuật (`AGENTS.md` §0). Đọc các phần README có lệnh build/test, tên module, route, prefs, ánh xạ DP. Chỗ nào lệch với spec/code thì ghi một dòng `README lệch: <mục README> — <đúng là gì>` vào §10 và nêu trong báo cáo. Khi README đã sửa khớp thì gỡ dòng đó khỏi §10.
+5. **Báo cáo** (≤ ~10 dòng): chế độ và lý do, khoảng commit (`<last7>..<head7>`), mục đã sửa, mục mới ở §10 cần xác nhận (gồm "README lệch"), nhắc commit file spec.

@@ -1,7 +1,7 @@
 ---
 spec_version: 1
 project: KhaiRC
-last_synced_commit: b636c48de8c6ddf378b18fa4e71a66270c4ec1d6
+last_synced_commit: ad2827f766920939686759c5eca6b148f09af236
 last_synced_at: 2026-11-13
 last_full_scan_commit: b636c48de8c6ddf378b18fa4e71a66270c4ec1d6
 ---
@@ -43,14 +43,14 @@ Nguồn: `app/src/main/java/com/khaiit/kremote/HomeScreen.kt`, `feature/*/src/ma
 - `dependencyResolutionManagement` dùng `FAIL_ON_PROJECT_REPOS` (chỉ `google()`, `mavenCentral()`).
 - Build/test (PowerShell, theo `AGENTS.md` §4):
   - Lệnh kiểm chứng chuẩn (`AGENTS.md` §4): `testDebugUnitTest` ở root (mọi module) + `:app:assembleDebug`, ghi log qua `cmd /c` vào `build\gradle.log`.
-  - Mọi module có `src/test` đều khai báo `testImplementation(libs.junit)`.
+  - Mọi module có `src/test` đều khai báo `testImplementation(libs.junit)`, gồm `core/ir`, `feature/fan`, `feature/wol` với `ExampleUnitTest`.
   - Một test: `.\gradlew.bat :feature:tuya:testDebugUnitTest --tests "com.khaiit.kremote.feature.tuya.TuyaOc09ControllerTest"`
   - APK: `app/build/outputs/apk/debug/app-debug.apk`.
 - Unit test: JUnit 4 + fake viết tay (không mocking library). Có ở `core/network` (`HubClientTest`, `HubHttpsProbeTest`, `HubHttpsToshibaControlsClientTest`, `MilifeStatusContractTest`), `feature/ac` (`DaikinBrcEncoderTest`, `DaikinAcControllerTest`, `ToshibaAcEncoderTest`, `ToshibaAcControllerTest`), `feature/tuya` (`TuyaOc09ControllerTest`, `TuyaRequestSignerTest`, `TuyaTokenRecoveryTest`, `TuyaCredentialPrivacyTest`, `TuyaOc09LabelRulesTest`). Các module khác chỉ có `ExampleUnitTest`.
 - Instrumented: `app/src/androidTest/.../HubIntegrationTest.kt` (cần thiết bị); chỉ compile được bằng `:app:compileDebugAndroidTestKotlin`.
 - Release: `optimization { enable = false }`; chưa có cấu hình ký release.
 
-Nguồn: `gradle/libs.versions.toml`, `build.gradle.kts`, `settings.gradle.kts`, `app/build.gradle.kts`, `core/network/build.gradle.kts`.
+Nguồn: `gradle/libs.versions.toml`, `build.gradle.kts`, `settings.gradle.kts`, `app/build.gradle.kts`, `core/network/build.gradle.kts`, `core/ir/build.gradle.kts`, `feature/fan/build.gradle.kts`, `feature/wol/build.gradle.kts`.
 
 ## 3. Cấu trúc module & phụ thuộc
 
@@ -304,9 +304,10 @@ Nguồn: các controller ở §5, `AGENTS.md`.
 - **Tuya DP mới:** xác minh DP trên thiết bị thật trước, thêm vào `TuyaChannel`. Sau POST phải đọc lại để xác minh, không gửi lại lệnh.
 - **Lưu secret mới:** dùng store AES-GCM/Keystore với alias riêng, thêm prefs vào cả hai file backup rules, `toString` redacted, test kiểu `TuyaCredentialPrivacyTest`.
 - **Quyền mới:** khai báo ở Manifest của module dùng nó. Quyền runtime thì kiểm qua lambda giống `networkAllowed`.
-- Quy trình phân vai: `/architect` → `$implement` → thử trên điện thoại → `$reviewer` → commit → `$docs` (`docs/AGENT_WORKFLOW.md`).
+- Quy trình phân vai: `/architect` → `$implement` → thử trên điện thoại → `$reviewer` → commit → `$docs` (`docs/AGENT_WORKFLOW.md`). Tiến độ nằm trong `docs/PLAN.md`, được `.gitignore` bỏ qua; mỗi vai dùng chat riêng.
+- `python tools/spec.py` in mục lục; truyền số mục hoặc từ khóa tiêu đề để đọc chọn lọc. Công cụ chỉ đọc spec, cần Python 3.7+.
 
-Nguồn: `AGENTS.md`, các module ở §5, `docs/AGENT_WORKFLOW.md`.
+Nguồn: `AGENTS.md`, các module ở §5, `docs/AGENT_WORKFLOW.md`, `.gitignore`, `tools/spec.py`.
 
 ## 10. Vấn đề đã biết, TODO, cần xác nhận
 
@@ -322,6 +323,7 @@ Nguồn: `git grep` trong `app core feature`, các file liên quan ở §5.
 
 ## 11. Nhật ký đồng bộ
 
+- 2026-11-13 · INCREMENTAL · `b636c48..ad2827f` · Xác nhận JUnit cho core/ir, feature/fan, feature/wol; bổ sung quy trình PLAN và công cụ đọc spec.
 - 2026-11-13 · FULL · `b636c48` · Tạo spec lần đầu cùng bộ skill agent (`AGENTS.md`, `.claude/skills`, `.agents/skills`).
 
 ## 12. Bản đồ file → mục
@@ -350,4 +352,5 @@ Nguồn: `git grep` trong `app core feature`, các file liên quan ở §5.
 | `feature/tuya/**` | §5.8, §6.1, §7 |
 | `docs/HUB_HTTPS_ANDROID_STAGE1.md` | §6.2 |
 | `README.md` | §0, §1 |
-| `AGENTS.md`, `docs/AGENT_WORKFLOW.md`, `tools/spec.py` | §8, §9 |
+| `AGENTS.md`, `docs/AGENT_WORKFLOW.md` | §8, §9 |
+| `.gitignore`, `tools/spec.py` | §9 |
