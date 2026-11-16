@@ -31,6 +31,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.SecureFlagPolicy
 import androidx.compose.ui.unit.dp
 import com.khaiit.kremote.core.network.HubHttpsEndpoint
 import com.khaiit.kremote.core.network.HubHttpsProbe
@@ -38,6 +41,12 @@ import com.khaiit.kremote.core.network.HubHttpsProbeResult
 import com.khaiit.kremote.core.network.HubEndpoint
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.launch
+
+/** Pure: no saved field means "not configured"; a partial or invalid entry throws instead of looking empty. */
+internal fun parseStoredHttpsEndpoint(host: String?, port: Int, pin: String?): HubHttpsEndpoint? {
+    if (host == null && pin == null) return null
+    return HubHttpsEndpoint(requireNotNull(host), port, requireNotNull(pin))
+}
 
 /** Contains no API key; fields are public host/port/certificate fingerprint only. */
 internal class HttpsProbePreferences(context: Context) {
@@ -48,6 +57,11 @@ internal class HttpsProbePreferences(context: Context) {
         val pin = prefs.getString("sha256", null) ?: return null
         HubHttpsEndpoint(host, prefs.getInt("port", 443), pin)
     }.getOrNull()
+
+    /** For cloud backup: null only when nothing is saved; throws when a saved endpoint is unreadable. */
+    fun readStored(): HubHttpsEndpoint? = parseStoredHttpsEndpoint(
+        prefs.getString("host", null), prefs.getInt("port", 443), prefs.getString("sha256", null)
+    )
 
     fun save(endpoint: HubHttpsEndpoint): Boolean = prefs.edit()
         .putString("host", endpoint.host)
@@ -134,10 +148,12 @@ fun HubHttpsProbeCard(modifier: Modifier = Modifier) {
     if (showConfig) {
         var host by remember { mutableStateOf(configured?.host ?: "openwrt96.ddns.net") }
         var port by remember { mutableStateOf((configured?.port ?: 443).toString()) }
-        var fingerprint by remember { mutableStateOf(configured?.fingerprintHex.orEmpty()) }
+        // The saved pin is never pre-filled or displayed; blank input keeps it (same rule as HUB_API_KEY).
+        var fingerprint by remember { mutableStateOf("") }
         var error by remember { mutableStateOf<String?>(null) }
         AlertDialog(
             onDismissRequest = { showConfig = false },
+            properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn),
             title = { Text("Cấu hình HTTPS Hub") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -158,7 +174,11 @@ fun HubHttpsProbeCard(modifier: Modifier = Modifier) {
                     OutlinedTextField(
                         value = fingerprint, onValueChange = { fingerprint = it; error = null },
                         label = { Text("SHA-256 certificate fingerprint (hex)") },
-                        singleLine = false, maxLines = 3,
+                        supportingText = {
+                            Text(if (configured != null) "Để trống để giữ fingerprint đã lưu" else "Nhập 64 ký tự hex (cho phép dấu :)")
+                        },
+                        singleLine = true, visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         modifier = Modifier.fillMaxWidth()
                     )
                     error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
@@ -171,7 +191,7 @@ fun HubHttpsProbeCard(modifier: Modifier = Modifier) {
                         HubHttpsEndpoint(
                             host.trim().lowercase(java.util.Locale.ROOT),
                             port.trim().toInt(),
-                            fingerprint.trim()
+                            fingerprint.trim().ifEmpty { configured?.fingerprintHex.orEmpty() }
                         )
                     }
                     val endpoint = validation.getOrNull()

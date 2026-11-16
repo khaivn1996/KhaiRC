@@ -1,6 +1,17 @@
 package com.khaiit.kremote
 
 import android.os.Bundle
+import android.view.WindowManager
+import androidx.compose.runtime.SideEffect
+import com.khaiit.kremote.core.vault.FirestoreVaultRemote
+import com.khaiit.kremote.core.vault.GoogleVaultAuth
+import com.khaiit.kremote.core.vault.VaultKeyStore
+import com.khaiit.kremote.core.vault.VaultStateStore
+import com.khaiit.kremote.vault.LocalVaultSources
+import com.khaiit.kremote.vault.VaultAutoPush
+import com.khaiit.kremote.vault.VaultController
+import com.khaiit.kremote.vault.VaultGateScreen
+import com.khaiit.kremote.vault.VaultUiState
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -27,6 +38,8 @@ import com.khaiit.kremote.feature.tuya.TuyaCloudOc09Repository
 import com.khaiit.kremote.ui.theme.KhaiRCTheme
 
 class MainActivity : ComponentActivity() {
+    private lateinit var vaultController: VaultController
+    private lateinit var vaultAutoPush: VaultAutoPush
     private lateinit var tuyaOc09Controller: TuyaOc09Controller
     private lateinit var milifeController: MilifeController
     private lateinit var toshibaHttpsControlsController: ToshibaHttpsControlsController
@@ -69,8 +82,29 @@ class MainActivity : ComponentActivity() {
             }
         )
 
+        vaultController = VaultController(
+            sources = LocalVaultSources(applicationContext),
+            auth = GoogleVaultAuth(getString(R.string.default_web_client_id)),
+            remote = FirestoreVaultRemote(),
+            keys = VaultKeyStore(applicationContext),
+            markers = VaultStateStore(applicationContext),
+            onRestored = { recreate() }
+        )
+        vaultAutoPush = VaultAutoPush(applicationContext, vaultController)
+        // Secure from the first frame only when the gate (secret inputs) is shown.
+        if (vaultController.state != VaultUiState.Ready) window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+
         setContent {
             KhaiRCTheme {
+                val vaultReady = vaultController.state == VaultUiState.Ready
+                SideEffect {
+                    if (vaultReady) window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                    else window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                }
+                if (!vaultReady) {
+                    VaultGateScreen(vaultController)
+                    return@KhaiRCTheme
+                }
                 /* Feature controllers */
                 val fanController = remember { FanController(irTransmitter) }
                 val wolController = remember {
@@ -102,13 +136,16 @@ class MainActivity : ComponentActivity() {
                     toshibaAcController = toshibaAcController,
                     toshibaHttpsControlsController = toshibaHttpsControlsController,
                     tuyaOc09Controller = tuyaOc09Controller,
-                    milifeController = milifeController
+                    milifeController = milifeController,
+                    vaultController = vaultController
                 )
             }
         }
     }
 
     override fun onDestroy() {
+        vaultAutoPush.close()
+        vaultController.close()
         milifeController.close()
         toshibaHttpsControlsController.close()
         super.onDestroy()
@@ -116,6 +153,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        vaultController.start()
         lifecycleScope.launch { tuyaOc09Controller.refresh() }
         milifeController.refresh()
     }

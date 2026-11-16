@@ -58,6 +58,8 @@ import com.khaiit.kremote.feature.tuya.TuyaOc09Controller
 import com.khaiit.kremote.feature.tuya.TuyaOc09DeviceCard
 import com.khaiit.kremote.feature.wol.WolController
 import com.khaiit.kremote.feature.wol.WolDeviceCard
+import com.khaiit.kremote.vault.VaultController
+import com.khaiit.kremote.vault.VaultCard
 
 private enum class HomeTab(val label: String, val subtitle: String, val icon: ImageVector) {
     ALL("Tất cả", "6 thiết bị · IR / LAN / Cloud", Icons.Filled.Apps),
@@ -77,6 +79,7 @@ fun HomeScreen(
     toshibaHttpsControlsController: ToshibaHttpsControlsController,
     tuyaOc09Controller: TuyaOc09Controller,
     milifeController: MilifeController,
+    vaultController: VaultController,
     modifier: Modifier = Modifier
 ) {
     // Tab navigation is UI-only: controllers stay in MainActivity and Tuya never
@@ -168,6 +171,7 @@ fun HomeScreen(
                     TuyaOc09DeviceCard(controller = tuyaOc09Controller)
                     MilifeDeviceCard(controller = milifeController)
                     HubHttpsProbeCard()
+                    VaultCard(vaultController)
                 }
             }
         }

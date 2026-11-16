@@ -14,6 +14,8 @@ class WolSettings(
                 Context.MODE_PRIVATE
             )
 
+    fun hasSavedConfig(): Boolean = preferences.contains(KEY_MAC_ADDRESS)
+
     fun getConfig(): WolConfig {
 
         val macAddress =

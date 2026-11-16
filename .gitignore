@@ -23,6 +23,9 @@ build/
 .idea/
 *.iml
 
+# Firebase configuration stays local
+/app/google-services.json
+
 # Local config
 local.properties
 # Patch files are never committed
