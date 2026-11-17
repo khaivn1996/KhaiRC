@@ -1,4 +1,5 @@
 plugins {
+    alias(libs.plugins.google.services)
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
 }
@@ -36,6 +37,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:vault"))
     implementation(project(":core:ir"))
     implementation(project(":core:network"))
     implementation(project(":feature:fan"))

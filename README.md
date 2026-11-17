@@ -103,6 +103,19 @@ Khai RC gọi Tuya Cloud trực tiếp từ Android, **không cần** OpenWrt, E
 
 Mọi kết nối Hub chỉ tin **đúng** chứng chỉ đã pin, vẫn kiểm tra hostname, không chuyển sang HTTP, không theo redirect và không tự gửi lại lệnh.
 
+## 4b. Sao lưu cloud
+
+1. Tạo Firebase project, thêm Android app `com.khaiit.kremote` và bật Google provider trong Authentication.
+2. Thêm SHA-1 của bản debug (lấy bằng `.\gradlew.bat signingReport`) vào cấu hình Android của Firebase.
+3. Tạo Firestore database mặc định và áp dụng rules trong `docs/firebase/firestore.rules`. Rules chỉ cho tài khoản đã đăng nhập truy cập vault của chính mình; cần kiểm tra rules trước khi chia sẻ ứng dụng.
+4. Đặt file cấu hình tải từ Firebase vào `app/google-services.json` trước khi build. File này chỉ lưu local, không đưa lên Git.
+5. Mở app, đăng nhập Google và đặt mật khẩu chủ ít nhất 12 ký tự. Có thể để trống các nhóm đã có trên máy để giữ nguyên.
+6. Khi cài mới, đăng nhập cùng tài khoản và nhập mật khẩu chủ để khôi phục. App chỉ lấp nhóm còn trống; nhóm đang có được giữ, rồi sao lưu bản gộp.
+
+Bản sao gồm cấu hình Tuya, Hub, HTTPS, WOL và tên ổ cắm, được mã hóa thành một blob AES-GCM; khóa dẫn xuất từ mật khẩu chủ bằng PBKDF2-SHA256. Thay đổi cấu hình trong card sẽ tự sao lưu sau khoảng 1,5 giây; card **Sao lưu cloud** trong tab Mạng cho phép sao lưu thủ công. Trạng thái điều khiển Daikin/Toshiba không nằm trong bản sao.
+
+**Quên mật khẩu chủ thì mất khả năng mở bản sao cũ.** Nút **Quên mật khẩu** cho nhập lại cấu hình và yêu cầu xác nhận trước khi ghi đè bản sao cloud. Chưa hỗ trợ đổi mật khẩu, đăng xuất hoặc nhiều tài khoản. Nếu mất mạng ở gate, chọn **Thử lại** hoặc **Bỏ qua lần này**; bỏ qua chỉ áp dụng trong phiên hiện tại.
+
 ## 5. Bảo mật và dữ liệu người dùng
 
 - **Không hardcode** Client ID, Client Secret, Device ID thực hay access token trong source code, Gradle, resources, README hoặc file đưa lên GitHub.
