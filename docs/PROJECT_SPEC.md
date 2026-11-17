@@ -1,8 +1,8 @@
 ---
 spec_version: 1
 project: KhaiRC
-last_synced_commit: ad2827f766920939686759c5eca6b148f09af236
-last_synced_at: 2026-11-13
+last_synced_commit: 651f1e70367cae2cca5c7f9346fbb36617742b85
+last_synced_at: 2026-11-17
 last_full_scan_commit: b636c48de8c6ddf378b18fa4e71a66270c4ec1d6
 ---
 
@@ -275,6 +275,7 @@ Nguồn: các file store ở trên, `app/src/main/AndroidManifest.xml`, `*/src/m
 
 ## 8. Quy ước & pattern của codebase
 
+- Thứ tự nguồn sự thật: code tại HEAD > `AGENTS.md` (quy tắc bắt buộc) > `docs/PROJECT_SPEC.md` (hiện trạng kỹ thuật) > `README.md` (hướng dẫn người dùng). Không lấy chi tiết kỹ thuật từ README; tài liệu mâu thuẫn code thì tin code và sửa hoặc báo tài liệu sai.
 - Controller có Compose state `var state by mutableStateOf(...)` + `private set`.
   - Controller async có scope riêng `CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)`, implement `AutoCloseable` và được `close()` trong `MainActivity.onDestroy`.
   - Tuya dùng `suspend fun` + `Mutex`; card gọi qua `rememberCoroutineScope`.
@@ -323,8 +324,11 @@ Nguồn: `git grep` trong `app core feature`, các file liên quan ở §5.
 
 ## 11. Nhật ký đồng bộ
 
+- 2026-11-17 · INCREMENTAL · `ad2827f..651f1e7` · Bổ sung thứ tự nguồn sự thật ở §8; đối chiếu README sau khi thống nhất lệnh kiểm chứng và chuyển chi tiết kiến trúc sang spec.
 - 2026-11-13 · INCREMENTAL · `b636c48..ad2827f` · Xác nhận JUnit cho core/ir, feature/fan, feature/wol; bổ sung quy trình PLAN và công cụ đọc spec.
 - 2026-11-13 · FULL · `b636c48` · Tạo spec lần đầu cùng bộ skill agent (`AGENTS.md`, `.claude/skills`, `.agents/skills`).
+
+Nguồn: lịch sử commit Git, `AGENTS.md`, `README.md`.
 
 ## 12. Bản đồ file → mục
 
