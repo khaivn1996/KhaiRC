@@ -1,11 +1,20 @@
-# KhaiRC Android – HTTPS Stage 1 (đọc trạng thái TLS, không điều khiển)
+# KhaiRC Android – HTTPS Hub
 
-- **Độc lập với MiLife và IR hiện có.** Card “HTTPS Hub · Stage 1” nằm trong tab Tất cả / Mạng.
-- Khai báo **hostname DDNS hoặc IPv4 LAN/VPN**, **cổng HTTPS** và **SHA-256 fingerprint của DER certificate tự ký**. Không nhập API key hoặc private key. Cấu hình probe được giữ trong SharedPreferences riêng và không dùng làm cấu hình MiLife/IR.
-- Khi nhấn KIỂM TRA, ứng dụng thực hiện đúng **một GET** `https://host:port/api/v1/health`, yêu cầu chứng chỉ self-signed đúng fingerprint và còn hạn, sau đó xác minh hostname qua TLS mặc định và JSON `status=ok`, `device=KhaiRC-ESP32-Hub`, `phase=https_probe`.
-- Không bỏ qua TLS (`HostnameVerifier`, `TrustManager` không trust-all); không chấp nhận HTTP; không theo redirect; không tự retry; không tự hạ cấp sang HTTP.
-- **Chỉ đúng với HTTPS Stage 1 trên ESP32**. Hiện firmware chỉ có `GET /api/v1/health` trên 443; muốn dùng MiLife/IR từ xa, sau này phải bổ sung server-side endpoints và kiểm thử độc lập.
-- Chưa mở WAN:999 hoặc :18080 hoặc port HTTPS mới, không kiểm thử HTTPS qua Internet đến khi Hub ổn định và phần bảo mật hoàn tất.
+## Nghiệm thu Stage A
+
+**Đã đạt** trên Hub chạy firmware `1.0.0`, build ID `a1b86edfc0a43a94` (slot `app1`, OTA `valid`).
+
+| Hạng mục | Mạng | Kết quả |
+|---|---|---|
+| HTTPS Hub | LAN, 4G | Nút **KIỂM TRA** thành công, TLS hợp lệ qua cổng `443`. |
+| MiLife 10A | LAN, 4G | Bật/tắt thành công và đọc lại đúng trạng thái. |
+| Toshiba | LAN | Điều khiển thành công qua HTTPS. |
+
+## Cấu hình và kiểm tra HTTPS
+
+- Thẻ “HTTPS Hub · Stage 2A” nằm trong tab Tất cả / Mạng. Cấu hình hostname hoặc IPv4, cổng HTTPS và SHA-256 fingerprint của chứng chỉ tự ký. MiLife và Toshiba dùng chung cấu hình HTTPS này.
+- Nút **KIỂM TRA** gửi một `GET /api/v1/health` qua HTTPS và không gửi API key. App kiểm tra fingerprint, hạn chứng chỉ, hostname và các trường JSON `status=ok`, `device=KhaiRC-ESP32-Hub`, `phase=https_probe`.
+- App giữ xác minh TLS mặc định cho hostname, không theo redirect và không hạ cấp sang HTTP. Xem [đặc tả API HTTPS](PROJECT_SPEC.md#62-esp32-hub-https) để biết các đường dẫn điều khiển.
 
 ## Fingerprint từ chứng chỉ có sẵn trên máy Windows
 
@@ -18,7 +27,7 @@ python -c "import ssl,hashlib,sys; print(hashlib.sha256(ssl.PEM_cert_to_DER_cert
 
 Kết quả 64 ký tự hex, chỉ là fingerprint **công khai**; không sao chép `tls_private_key.pem` hay `tls_credentials.h` vào dự án Android.
 
-Nếu test qua VPN/LAN, nhập `192.168.2.200`, cổng `443` (chứng chỉ hiện tại có SAN IP này). Nếu test Internet sau khi an toàn, nhập `openwrt96.ddns.net` và cổng WAN HTTPS được forward tới ESP32:443 (ví dụ 18443, **chưa mở**). Chứng chỉ hiện tại cũng có SAN DNS này. Khi thay chứng chỉ, cần cập nhật fingerprint.
+Dùng địa chỉ IPv4 LAN hoặc hostname truy cập từ xa có trong SAN của chứng chỉ. Cấu hình đã nghiệm thu dùng cổng `443`. Khi thay chứng chỉ, cập nhật fingerprint từ bản PEM tin cậy.
 
 ## Kiểm thử trên Windows / Android Studio
 
@@ -30,7 +39,5 @@ Nếu plugin AGP đặt tên task khác, liệt kê `gradlew.bat :core:network:t
 
 ## Hạn chế
 
-- Chưa kiểm thử bằng Android SDK hoặc máy thật trong môi trường tạo bản vá này.
-- Trust manager chấp nhận **duy nhất** chứng chỉ tự ký đã được pin; HTTPS có CA công khai sẽ cần thiết kế xác thực khác.
-- Fingerprint được nhập thủ công: phải so khớp với bản PEM ở máy tính tin cậy; không lấy fingerprint bằng cách tự động chấp nhận một máy chủ chưa xác thực.
-- Hiện chưa kết nối cấu hình remote với UI Milife/IR; điều này là chủ đích để không kích hoạt chức năng chưa có trên ESP32 Stage 1.
+- Trust manager chỉ chấp nhận chứng chỉ tự ký đã được pin. HTTPS dùng CA công khai cần thiết kế xác thực khác.
+- Nhập fingerprint từ bản PEM trên máy tính tin cậy.
