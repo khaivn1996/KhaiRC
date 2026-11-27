@@ -1,0 +1,16 @@
+<resources>
+    <string name="wol_wake_sent">Đã gửi gói Wake tới %1$s:9 · Chưa xác minh PC đã bật</string>
+    <string name="wol_sending">Đang gửi Wake-on-LAN...</string>
+    <string name="wol_send_failed">Không thể gửi Wake-on-LAN</string>
+    <string name="wol_lan_permission">Cần quyền Local network để Wake-on-LAN</string>
+    <string name="wol_invalid_config">Thông tin Wake-on-LAN không hợp lệ</string>
+    <string name="wol_title">PC</string>
+    <string name="wol_subtitle">Wake-on-LAN · Không đọc trạng thái PC</string>
+    <string name="wol_wake">Gửi gói Wake-on-LAN đến PC</string>
+    <string name="wol_edit_config">Chỉnh cấu hình Wake-on-LAN</string>
+    <string name="wol_config_title">PC Wake-on-LAN</string>
+    <string name="wol_mac_address">MAC Address</string>
+    <string name="wol_target_ip">Target IP</string>
+    <string name="wol_set">SET</string>
+    <string name="wol_cancel">CANCEL</string>
+</resources>

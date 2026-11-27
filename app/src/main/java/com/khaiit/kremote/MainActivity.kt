@@ -1,5 +1,8 @@
 package com.khaiit.kremote
 
+import com.khaiit.kremote.core.network.hasLocalNetworkPermission
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.compose.runtime.SideEffect
@@ -12,10 +15,7 @@ import com.khaiit.kremote.vault.VaultAutoPush
 import com.khaiit.kremote.vault.VaultController
 import com.khaiit.kremote.vault.VaultGateScreen
 import com.khaiit.kremote.vault.VaultUiState
-import android.Manifest
-import android.content.pm.PackageManager
 import android.os.Build
-import androidx.core.content.ContextCompat
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.lifecycle.lifecycleScope
@@ -27,7 +27,6 @@ import com.khaiit.kremote.core.network.HubHttpsMilifeClient
 import com.khaiit.kremote.core.network.HubHttpsToshibaControlsClient
 import com.khaiit.kremote.feature.ac.daikin.DaikinAcController
 import com.khaiit.kremote.feature.ac.daikin.DaikinAcSettings
-import com.khaiit.kremote.feature.ac.toshiba.ToshibaAcController
 import com.khaiit.kremote.feature.ac.toshiba.ToshibaAcSettings
 import com.khaiit.kremote.feature.fan.FanController
 import com.khaiit.kremote.feature.wol.WolController
@@ -35,7 +34,7 @@ import com.khaiit.kremote.feature.wol.WolSettings
 import com.khaiit.kremote.feature.tuya.TuyaOc09Controller
 import com.khaiit.kremote.feature.tuya.TuyaCredentialStore
 import com.khaiit.kremote.feature.tuya.TuyaCloudOc09Repository
-import com.khaiit.kremote.ui.theme.KhaiRCTheme
+import com.khaiit.kremote.core.ui.theme.KhaiRCTheme
 
 class MainActivity : ComponentActivity() {
     private lateinit var vaultController: VaultController
@@ -59,27 +58,20 @@ class MainActivity : ComponentActivity() {
             TuyaCredentialStore(applicationContext),
             TuyaCloudOc09Repository()
         )
+        val networkAllowed: () -> Boolean = { hasLocalNetworkPermission() }
         milifeController = MilifeController(
             api = HubHttpsMilifeClient { HttpsProbePreferences(applicationContext).read() },
             store = HubSettingsStore(applicationContext),
-            networkAllowed = {
-                Build.VERSION.SDK_INT < 37 || ContextCompat.checkSelfPermission(
-                    this, Manifest.permission.ACCESS_LOCAL_NETWORK
-                ) == PackageManager.PERMISSION_GRANTED
-            }
+            networkAllowed = networkAllowed
         )
 
-        // Independent of phone-IR Toshiba controls and the read-only MiLife card.
+        // Independent of the MiLife card.
         toshibaHttpsControlsController = ToshibaHttpsControlsController(
             api = HubHttpsToshibaControlsClient(),
             hubStore = HubSettingsStore(applicationContext),
-            stateStore = ToshibaAcSettings(applicationContext),
+            stateStore = toshibaAcSettings,
             endpointProvider = { HttpsProbePreferences(applicationContext).read() },
-            networkAllowed = {
-                Build.VERSION.SDK_INT < 37 || ContextCompat.checkSelfPermission(
-                    this, Manifest.permission.ACCESS_LOCAL_NETWORK
-                ) == PackageManager.PERMISSION_GRANTED
-            }
+            networkAllowed = networkAllowed
         )
 
         vaultController = VaultController(
@@ -93,6 +85,12 @@ class MainActivity : ComponentActivity() {
         vaultAutoPush = VaultAutoPush(applicationContext, vaultController)
         // Secure from the first frame only when the gate (secret inputs) is shown.
         if (vaultController.state != VaultUiState.Ready) window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+        )
+        if (Build.VERSION.SDK_INT >= 29) window.isNavigationBarContrastEnforced = false
 
         setContent {
             KhaiRCTheme {
@@ -119,13 +117,6 @@ class MainActivity : ComponentActivity() {
                         stateStore = daikinAcSettings
                     )
                 }
-                val toshibaAcController = remember {
-                    ToshibaAcController(
-                        irTransmitter = irTransmitter,
-                        stateStore = toshibaAcSettings
-                    )
-                }
-
                 HomeScreen(
                     irAvailable = fanController.isIrAvailable,
                     onPowerHigh = fanController::powerHigh,
@@ -133,7 +124,6 @@ class MainActivity : ComponentActivity() {
                     onFanOff = fanController::off,
                     wolController = wolController,
                     daikinAcController = daikinAcController,
-                    toshibaAcController = toshibaAcController,
                     toshibaHttpsControlsController = toshibaHttpsControlsController,
                     tuyaOc09Controller = tuyaOc09Controller,
                     milifeController = milifeController,

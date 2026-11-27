@@ -1,5 +1,6 @@
 package com.khaiit.kremote.feature.tuya
 
+import com.khaiit.kremote.core.ui.text.UiText
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test
@@ -48,7 +49,7 @@ class TuyaOc09ControllerTest {
         controller.toggle("switch_1")
         assertFalse(controller.state.verified)
         assertNull(controller.state.channelPower("switch_1"))
-        assertTrue(controller.state.message!!.contains("Chưa xác minh"))
+        assertEquals(R.string.tuya_toggle_failed, (controller.state.message as UiText.Res).id)
     }
 
     @Test fun masterUsesOneBatchRequestForAllChannels() = runBlocking {
@@ -76,7 +77,7 @@ class TuyaOc09ControllerTest {
         assertEquals(listOf(true), fake.batchWrites) // never retry POST
         assertFalse(controller.state.verified)
         assertNull(controller.state.masterPower)
-        assertTrue(controller.state.message!!.contains("Power tổng chưa xác minh"))
+        assertEquals(R.string.tuya_master_failed, (controller.state.message as UiText.Res).id)
     }
 
     @Test fun masterDoesNotSendIfStateIsUnknown() = runBlocking {

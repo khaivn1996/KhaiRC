@@ -1,8 +1,7 @@
 package com.khaiit.kremote.feature.ac.toshiba
 
 /**
- * Toshiba IR state for COOL. The temperature is transmitted in the 72-bit
- * command along with the selected fan speed.
+ * Toshiba AC state for COOL.
  *
  * The displayed state is only a local estimate; the air conditioner does not
  * report changes made with the original remote back to KhaiRC.
@@ -26,13 +25,13 @@ data class ToshibaAcState(
     }
 }
 
-enum class ToshibaFanSpeed(val label: String, val protocolByte: Int) {
-    AUTO("\u24B6", 0x80),
-    LEVEL_1("1", 0x82),
-    LEVEL_2("2", 0x86),
-    LEVEL_3("3", 0x81),
-    LEVEL_4("4", 0x85),
-    LEVEL_5("5", 0x83)
+enum class ToshibaFanSpeed(val label: String) {
+    AUTO("\u24B6"),
+    LEVEL_1("1"),
+    LEVEL_2("2"),
+    LEVEL_3("3"),
+    LEVEL_4("4"),
+    LEVEL_5("5")
 }
 
 interface ToshibaAcStateStore {

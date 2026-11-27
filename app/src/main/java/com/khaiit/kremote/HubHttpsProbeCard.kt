@@ -1,22 +1,22 @@
 package com.khaiit.kremote
 
-import android.Manifest
+import androidx.compose.ui.res.stringResource
+import com.khaiit.kremote.core.ui.text.asString
+import com.khaiit.kremote.core.ui.text.UiText
+import com.khaiit.kremote.core.ui.text.uiText
+import com.khaiit.kremote.core.ui.R as CoreUiR
+import com.khaiit.kremote.core.ui.components.DeviceCard
+import com.khaiit.kremote.core.network.LOCAL_NETWORK_PERMISSION
+import com.khaiit.kremote.core.network.hasLocalNetworkPermission
 import android.content.Context
-import android.content.pm.PackageManager
-import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -39,7 +39,6 @@ import com.khaiit.kremote.core.network.HubHttpsEndpoint
 import com.khaiit.kremote.core.network.HubHttpsProbe
 import com.khaiit.kremote.core.network.HubHttpsProbeResult
 import com.khaiit.kremote.core.network.HubEndpoint
-import androidx.core.content.ContextCompat
 import kotlinx.coroutines.launch
 
 /** Pure: no saved field means "not configured"; a partial or invalid entry throws instead of looking empty. */
@@ -79,25 +78,29 @@ fun HubHttpsProbeCard(modifier: Modifier = Modifier) {
     var configured by remember { mutableStateOf(preferences.read()) }
     var busy by remember { mutableStateOf(false) }
     var showConfig by remember { mutableStateOf(false) }
-    var message by remember { mutableStateOf("Chưa kiểm tra HTTPS") }
+    var message by remember { mutableStateOf<UiText>(uiText(R.string.hub_probe_initial)) }
 
     val runProbe: (HubHttpsEndpoint) -> Unit = { endpoint ->
         busy = true
-        message = "Đang kiểm tra TLS…"
+        message = uiText(R.string.hub_probe_checking)
         scope.launch {
             try {
                 message = when (val result = probe.check(endpoint)) {
                     is HubHttpsProbeResult.Verified ->
-                        "TLS hợp lệ · Hub phản hồi · Uptime ${result.uptimeSeconds}s · Heap ${result.freeHeap} B"
+                        uiText(
+                            R.string.hub_probe_verified,
+                            result.uptimeSeconds.toString(),
+                            result.freeHeap.toString()
+                        )
                     is HubHttpsProbeResult.Failed -> when (result.code) {
-                        "tls_validation_failed" -> "TLS không hợp lệ: chứng chỉ, tên máy chủ hoặc ngày hết hạn"
-                        "dns_error" -> "Không phân giải được tên miền"
-                        "timeout" -> "Không thể kết nối trong thời gian cho phép"
-                        "redirect_blocked" -> "Máy chủ chuyển hướng: đã chặn"
-                        "invalid_response" -> "Phản hồi HTTPS không đúng Stage 1"
-                        "response_too_large" -> "Phản hồi HTTPS quá lớn"
-                        "network_permission" -> "Không có quyền kết nối mạng"
-                        else -> "Chưa xác minh được Hub qua HTTPS (${result.code})"
+                        "tls_validation_failed" -> uiText(R.string.hub_probe_tls_failed)
+                        "dns_error" -> uiText(R.string.hub_probe_dns_error)
+                        "timeout" -> uiText(R.string.hub_probe_timeout)
+                        "redirect_blocked" -> uiText(R.string.hub_probe_redirect_blocked)
+                        "invalid_response" -> uiText(R.string.hub_probe_invalid_response)
+                        "response_too_large" -> uiText(R.string.hub_probe_response_too_large)
+                        "network_permission" -> uiText(R.string.hub_probe_network_permission)
+                        else -> uiText(R.string.hub_probe_unverified, result.code)
                     }
                 }
             } finally { busy = false }
@@ -107,81 +110,72 @@ fun HubHttpsProbeCard(modifier: Modifier = Modifier) {
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) configured?.let(runProbe)
-        else message = "Cần quyền mạng LAN để kiểm tra địa chỉ IP nội bộ"
+        else message = uiText(R.string.hub_probe_lan_permission)
     }
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
-    ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("HTTPS Hub · Stage 2A", style = MaterialTheme.typography.titleLarge)
-            Text("Probe TLS/health không gửi key; cấu hình này còn dùng đọc MiLife qua HTTPS.",
-                style = MaterialTheme.typography.bodySmall)
-            Text(configured?.let { "Đích: ${it.host}:${it.port}" } ?: "Chưa cấu hình HTTPS",
-                style = MaterialTheme.typography.bodySmall)
-            Text(message, style = MaterialTheme.typography.bodyMedium)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { showConfig = true }, enabled = !busy) {
-                    Text("CẤU HÌNH")
+    DeviceCard(modifier, verticalSpacing = 10.dp) {
+        Text(stringResource(R.string.hub_probe_title), style = MaterialTheme.typography.titleLarge)
+        Text(stringResource(R.string.hub_probe_subtitle),
+            style = MaterialTheme.typography.bodySmall)
+        Text(configured?.let { stringResource(R.string.hub_probe_target, it.host, it.port.toString()) } ?: stringResource(R.string.hub_probe_not_configured),
+            style = MaterialTheme.typography.bodySmall)
+        Text(message.asString(), style = MaterialTheme.typography.bodyMedium)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick = { showConfig = true }, enabled = !busy) {
+                Text(stringResource(R.string.hub_probe_configure))
+            }
+            OutlinedButton(onClick = {
+                val endpoint = configured ?: return@OutlinedButton
+                val isPrivateIp = runCatching { HubEndpoint(endpoint.host) }.isSuccess
+                if (isPrivateIp && !context.hasLocalNetworkPermission()) {
+                    permissionLauncher.launch(LOCAL_NETWORK_PERMISSION)
+                } else {
+                    runProbe(endpoint)
                 }
-                OutlinedButton(onClick = {
-                    val endpoint = configured ?: return@OutlinedButton
-                    val isPrivateIp = runCatching { HubEndpoint(endpoint.host) }.isSuccess
-                    if (isPrivateIp && Build.VERSION.SDK_INT >= 37 &&
-                        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_LOCAL_NETWORK) !=
-                        PackageManager.PERMISSION_GRANTED
-                    ) {
-                        permissionLauncher.launch(Manifest.permission.ACCESS_LOCAL_NETWORK)
-                    } else {
-                        runProbe(endpoint)
-                    }
-                }, enabled = !busy && configured != null) {
-                    Text(if (busy) "ĐANG KIỂM TRA" else "KIỂM TRA")
-                }
+            }, enabled = !busy && configured != null) {
+                Text(if (busy) stringResource(R.string.hub_probe_checking_button) else stringResource(R.string.hub_probe_check))
             }
         }
     }
 
     if (showConfig) {
-        var host by remember { mutableStateOf(configured?.host ?: "openwrt96.ddns.net") }
+        var host by remember { mutableStateOf(configured?.host ?: "") }
         var port by remember { mutableStateOf((configured?.port ?: 443).toString()) }
         // The saved pin is never pre-filled or displayed; blank input keeps it (same rule as HUB_API_KEY).
         var fingerprint by remember { mutableStateOf("") }
-        var error by remember { mutableStateOf<String?>(null) }
+        var error by remember { mutableStateOf<UiText?>(null) }
         AlertDialog(
             onDismissRequest = { showConfig = false },
             properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn),
-            title = { Text("Cấu hình HTTPS Hub") },
+            title = { Text(stringResource(R.string.hub_probe_config_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Nhập tên DNS hoặc IPv4 LAN/VPN, không kèm https://. Dùng fingerprint SHA-256 của chứng chỉ Hub; không nhập private key.",
+                    Text(stringResource(R.string.hub_probe_config_intro),
                         style = MaterialTheme.typography.bodySmall)
                     OutlinedTextField(
                         value = host, onValueChange = { host = it; error = null },
-                        label = { Text("Hostname hoặc IP") },
+                        label = { Text(stringResource(R.string.hub_probe_host_label)) },
+                        placeholder = { Text(stringResource(R.string.hub_probe_host_placeholder)) },
                         singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
                         value = port, onValueChange = { port = it; error = null },
-                        label = { Text("Cổng HTTPS") },
+                        label = { Text(stringResource(R.string.hub_probe_port_label)) },
                         singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
                         value = fingerprint, onValueChange = { fingerprint = it; error = null },
-                        label = { Text("SHA-256 certificate fingerprint (hex)") },
+                        label = { Text(stringResource(R.string.hub_probe_pin_label)) },
                         supportingText = {
-                            Text(if (configured != null) "Để trống để giữ fingerprint đã lưu" else "Nhập 64 ký tự hex (cho phép dấu :)")
+                            Text(if (configured != null) stringResource(R.string.hub_probe_keep_pin) else stringResource(R.string.hub_probe_enter_pin))
                         },
                         singleLine = true, visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         modifier = Modifier.fillMaxWidth()
                     )
-                    error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                    error?.let { Text(it.asString(), color = MaterialTheme.colorScheme.error) }
                 }
             },
             confirmButton = {
@@ -197,20 +191,20 @@ fun HubHttpsProbeCard(modifier: Modifier = Modifier) {
                     val endpoint = validation.getOrNull()
                     if (endpoint == null) {
                         error = when (val cause = validation.exceptionOrNull()) {
-                            is NumberFormatException -> "Cổng HTTPS phải là số từ 1 đến 65535."
-                            is IllegalArgumentException -> cause.message ?: "Cấu hình HTTPS không hợp lệ."
-                            else -> "Không kiểm tra được cấu hình HTTPS."
+                            is NumberFormatException -> uiText(R.string.hub_probe_invalid_port)
+                            is IllegalArgumentException -> cause.message?.let(UiText::Raw) ?: uiText(R.string.hub_probe_invalid_config)
+                            else -> uiText(R.string.hub_probe_validation_failed)
                         }
                     } else if (!preferences.save(endpoint)) {
-                        error = "Không thể lưu cấu hình HTTPS."
+                        error = uiText(R.string.hub_probe_save_failed)
                     } else {
                         configured = endpoint
-                        message = "Đã lưu · Chưa kiểm tra chứng chỉ"
+                        message = uiText(R.string.hub_probe_saved)
                         showConfig = false
                     }
-                }) { Text("LƯU") }
+                }) { Text(stringResource(CoreUiR.string.common_save)) }
             },
-            dismissButton = { TextButton(onClick = { showConfig = false }) { Text("HỦY") } }
+            dismissButton = { TextButton(onClick = { showConfig = false }) { Text(stringResource(CoreUiR.string.common_cancel)) } }
         )
     }
 }

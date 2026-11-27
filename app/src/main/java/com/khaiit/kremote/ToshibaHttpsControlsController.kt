@@ -1,5 +1,7 @@
 package com.khaiit.kremote
 
+import com.khaiit.kremote.core.ui.text.UiText
+import com.khaiit.kremote.core.ui.text.uiText
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -24,7 +26,7 @@ data class ToshibaHttpsUiState(
     val model: ToshibaAcState,
     val busy: Boolean = false,
     val needsManualCheck: Boolean = false,
-    val message: String = "Toshiba qua HTTPS · Chỉ phát IR khi nhấn nút"
+    val message: UiText = uiText(R.string.toshiba_https_initial)
 )
 
 class ToshibaHttpsControlsController(
@@ -75,7 +77,7 @@ class ToshibaHttpsControlsController(
     fun confirmObserved() {
         if (state.busy || !state.needsManualCheck) return
         state = state.copy(needsManualCheck = false,
-            message = "Đã xác nhận kiểm tra thực tế. Trạng thái trong app vẫn chỉ là ước lượng.")
+            message = uiText(R.string.toshiba_https_observed))
     }
 
     private inline fun withModel(action: (ToshibaAcState) -> Unit) {
@@ -98,21 +100,21 @@ class ToshibaHttpsControlsController(
     /** Only successful 200/validated acknowledgement updates locally stored state. */
     private fun submit(command: ToshibaHttpsAction, newState: ToshibaAcState?) {
         if (!gate.compareAndSet(false, true)) return
-        state = state.copy(busy = true, message = "Đang gửi một lệnh Toshiba qua HTTPS…")
+        state = state.copy(busy = true, message = uiText(R.string.toshiba_https_sending))
         scope.launch {
             try {
                 if (!networkAllowed()) {
-                    state = state.copy(message = "Chưa có quyền truy cập mạng LAN.")
+                    state = state.copy(message = uiText(R.string.toshiba_https_lan_permission))
                     return@launch
                 }
                 val endpoint = endpointProvider()
                 if (endpoint == null) {
-                    state = state.copy(message = "Chưa cấu hình HTTPS Hub hoặc fingerprint.")
+                    state = state.copy(message = uiText(R.string.toshiba_https_https_setup_needed))
                     return@launch
                 }
                 val config = hubStore.load()?.config
                 if (config == null) {
-                    state = state.copy(message = "Chưa có API key của Hub.")
+                    state = state.copy(message = uiText(R.string.toshiba_https_missing_key))
                     return@launch
                 }
                 when (val result = api.send(config, endpoint, command)) {
@@ -120,29 +122,28 @@ class ToshibaHttpsControlsController(
                         if (newState != null) stateStore.save(newState)
                         state = state.copy(
                             model = newState ?: state.model,
-                            message = "Đã phát ${command.action} một lần qua HTTPS; máy lạnh chưa phản hồi trạng thái.")
+                            message = uiText(R.string.toshiba_https_sent, command.action))
                     }
                     is ToshibaHttpsControlResult.Rejected -> {
                         state = state.copy(message = when (result.status) {
-                            401 -> "Hub từ chối API key (401), không phát IR."
-                            422 -> "Hub từ chối lệnh hoặc tham số Toshiba (422)."
-                            503 -> "Driver IR chưa sẵn sàng hoặc đang bận (503)."
-                            else -> "Hub từ chối lệnh (${result.status})."
+                            401 -> uiText(R.string.toshiba_https_unauthorized)
+                            422 -> uiText(R.string.toshiba_https_invalid_command)
+                            503 -> uiText(R.string.toshiba_https_driver_unavailable)
+                            else -> uiText(R.string.toshiba_https_rejected, result.status.toString())
                         })
                     }
                     is ToshibaHttpsControlResult.Uncertain -> {
                         state = state.copy(needsManualCheck = true,
-                            message = "Chưa rõ lệnh đã phát hay chưa (${result.reason}). " +
-                                "Hãy kiểm tra máy lạnh trước khi gửi thêm.")
+                            message = uiText(R.string.toshiba_https_uncertain, result.reason.toString()))
                     }
                 }
             } catch (cancelled: CancellationException) {
                 state = state.copy(needsManualCheck = true,
-                    message = "Lệnh bị hủy; chưa rõ đã phát chưa. Kiểm tra máy lạnh trước khi thao tác tiếp.")
+                    message = uiText(R.string.toshiba_https_cancelled))
                 throw cancelled
             } catch (_: Exception) {
                 state = state.copy(needsManualCheck = true,
-                    message = "Không xác định kết quả lệnh. Kiểm tra máy lạnh trước khi thao tác tiếp.")
+                    message = uiText(R.string.toshiba_https_unknown_result))
             } finally {
                 state = state.copy(busy = false)
                 gate.set(false)

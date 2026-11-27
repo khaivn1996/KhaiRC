@@ -1,5 +1,9 @@
 package com.khaiit.kremote.vault
 
+import com.khaiit.kremote.core.ui.text.UiText
+import com.khaiit.kremote.core.ui.text.uiText
+import androidx.annotation.StringRes
+import com.khaiit.kremote.R
 import android.app.Activity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -16,18 +20,18 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-enum class Group(val label: String) {
-    TUYA("Tuya"), HUB("Hub"), HTTPS("HTTPS"), WOL("WOL"), LABELS("tên ổ cắm")
+enum class Group(@StringRes val labelRes: Int) {
+    TUYA(R.string.vault_group_tuya), HUB(R.string.vault_group_hub), HTTPS(R.string.vault_group_https), WOL(R.string.vault_group_wol), LABELS(R.string.vault_group_labels)
 }
 
 sealed interface VaultUiState {
     data object Ready : VaultUiState
     data object Checking : VaultUiState
     data object NeedSignIn : VaultUiState
-    data class NeedPassword(val error: String? = null) : VaultUiState
-    data class NeedSetup(val localGroups: Set<Group>, val error: String? = null) : VaultUiState
-    data class Working(val msg: String) : VaultUiState
-    data class Error(val msg: String, val canSkip: Boolean) : VaultUiState
+    data class NeedPassword(val error: UiText? = null) : VaultUiState
+    data class NeedSetup(val localGroups: Set<Group>, val error: UiText? = null) : VaultUiState
+    data class Working(val msg: UiText) : VaultUiState
+    data class Error(val msg: UiText, val canSkip: Boolean) : VaultUiState
 }
 
 private class WeakPasswordException : Exception("Mật khẩu chủ không hợp lệ")
@@ -58,8 +62,8 @@ class VaultController(
     /** True only when this install holds a key and has completed a sync; enables manual/auto push. */
     var backupEnabled by mutableStateOf(syncedAtLaunch)
         private set
-    var syncStatus by mutableStateOf(
-        if (!syncedAtLaunch) "Chưa sao lưu cloud" else if (isDirty()) "Có thay đổi chưa sao lưu" else "Đã đồng bộ cloud"
+    var syncStatus by mutableStateOf<UiText>(
+        if (!syncedAtLaunch) uiText(R.string.vault_sync_missing) else if (isDirty()) uiText(R.string.vault_sync_dirty) else uiText(R.string.vault_sync_done)
     )
         private set
 
@@ -74,11 +78,11 @@ class VaultController(
             replacingCloud = false
             backupEnabled = true
             state = VaultUiState.Ready
-            syncStatus = if (isDirty()) "Có thay đổi chưa sao lưu" else "Đã đồng bộ cloud"
+            syncStatus = if (isDirty()) uiText(R.string.vault_sync_dirty) else uiText(R.string.vault_sync_done)
             if (isDirty()) pushNow()
             return
         }
-        runOperation("Đang kiểm tra bản sao…") {
+        runOperation(uiText(R.string.vault_checking)) {
             replacingCloud = false
             checkCloud()
         }
@@ -104,14 +108,14 @@ class VaultController(
     }
 
     fun signIn(activity: Activity) {
-        runOperation("Đang đăng nhập Google…") {
+        runOperation(uiText(R.string.vault_signing_in)) {
             auth.signIn(activity)
             checkCloud()
         }
     }
 
     fun unlock(password: CharArray) {
-        runOperation("Đang mở bản sao…", cleanup = { password.fill('\u0000') }) {
+        runOperation(uiText(R.string.vault_opening), cleanup = { password.fill('\u0000') }) {
             val doc = pendingDoc ?: throw VaultFormatException()
             val uid = auth.currentUid() ?: throw VaultSignInException()
             val key = withContext(Dispatchers.Default) { VaultCrypto.deriveKek(password, doc.salt, doc.iterations) }
@@ -123,7 +127,7 @@ class VaultController(
                     }
                 } catch (_: VaultAuthException) {
                     // Stay on the password screen: keeps the fetched doc and the "Quên mật khẩu" path.
-                    state = VaultUiState.NeedPassword("Sai mật khẩu chủ hoặc dữ liệu cloud bị hỏng")
+                    state = VaultUiState.NeedPassword(uiText(R.string.vault_error_password))
                     return@runOperation
                 }
                 val merge = VaultMerge.merge(sources.readAll(), cloud)
@@ -144,7 +148,7 @@ class VaultController(
         // Replacing requires the explicit overwrite confirmation; a first setup must not clobber a copy
         // that another install created after this gate fetched "no copy".
         val precondition = if (replacingCloud) VaultPrecondition.Overwrite else VaultPrecondition.MustNotExist
-        runOperation("Đang tạo bản sao…", cleanup = { password.fill('\u0000'); confirm.fill('\u0000') }) {
+        runOperation(uiText(R.string.vault_creating), cleanup = { password.fill('\u0000'); confirm.fill('\u0000') }) {
             try {
                 if (password.size < VaultCrypto.MIN_PASSWORD || !password.contentEquals(confirm)) {
                     throw WeakPasswordException()
@@ -178,7 +182,7 @@ class VaultController(
     }
 
     fun forgotPassword() {
-        runOperation("Đang đọc cấu hình trên máy…") {
+        runOperation(uiText(R.string.vault_reading_local)) {
             replacingCloud = true
             state = VaultUiState.NeedSetup(groups(sources.readAll()))
         }
@@ -188,7 +192,7 @@ class VaultController(
         if (gate.get()) return
         skipped = true
         state = VaultUiState.Ready
-        syncStatus = "Đã bỏ qua sao lưu trong phiên này"
+        syncStatus = uiText(R.string.vault_sync_skipped)
     }
 
     fun markDirty() {
@@ -197,13 +201,13 @@ class VaultController(
             // Runs inside a SharedPreferences listener: a marker failure must not crash the app.
             try { markers.markDirty() } catch (_: Exception) { }
         }
-        if (backupEnabled) syncStatus = "Có thay đổi chưa sao lưu"
+        if (backupEnabled) syncStatus = uiText(R.string.vault_sync_dirty)
     }
 
     /** Idempotent Firestore set; never retries or dispatches a device POST/IR command. */
     fun pushNow() {
         if (skipped || !backupEnabled || state != VaultUiState.Ready) return
-        runOperation("Đang sao lưu…", background = true) {
+        runOperation(uiText(R.string.vault_syncing), background = true) {
             val uid = auth.currentUid() ?: throw VaultSignInException()
             val key = withContext(Dispatchers.IO) { keys.load() } ?: throw VaultStorageException()
             try {
@@ -215,19 +219,19 @@ class VaultController(
                 withContext(Dispatchers.IO) {
                     synchronized(dirtyLock) { markers.completed(hash, dirty = before != revision) }
                 }
-                syncStatus = if (isDirty()) "Có thay đổi chưa sao lưu" else "Đã đồng bộ cloud"
+                syncStatus = if (isDirty()) uiText(R.string.vault_sync_dirty) else uiText(R.string.vault_sync_done)
             } catch (_: VaultKeyChangedException) {
                 // Another install set a new master password: never overwrite its copy with this older key.
                 // Local edits stay dirty and are merged/pushed after unlocking with the new password.
                 withContext(Dispatchers.IO) { markers.resetSync() }
                 backupEnabled = false
-                syncStatus = "Mật khẩu chủ của bản sao đã đổi ở máy khác. Nhấn Thiết lập sao lưu và nhập mật khẩu mới; thay đổi trên máy sẽ được sao lưu sau đó."
+                syncStatus = uiText(R.string.vault_sync_key_changed)
             } finally { key.kek.fill(0) }
         }
     }
 
     private fun runOperation(
-        message: String,
+        message: UiText,
         background: Boolean = false,
         cleanup: () -> Unit = {},
         block: suspend () -> Unit
@@ -255,25 +259,25 @@ class VaultController(
     }
 
     /** Fixed Vietnamese texts only; never includes exception messages or input values. */
-    private fun errorText(error: Exception): String = when (error) {
-        is VaultAuthException -> "Sai mật khẩu chủ hoặc dữ liệu cloud bị hỏng"
+    private fun errorText(error: Exception): UiText = when (error) {
+        is VaultAuthException -> uiText(R.string.vault_error_password)
         is VaultSignInException ->
-            "Không đăng nhập được Google. Kiểm tra tài khoản Google trên máy và cấu hình Firebase (SHA-1, Google provider)."
-        is VaultStorageException -> "Không đọc hoặc ghi được dữ liệu sao lưu trên máy. Hãy thử lại."
-        is VaultFormatException -> "Dữ liệu sao lưu không hợp lệ"
+            uiText(R.string.vault_error_sign_in)
+        is VaultStorageException -> uiText(R.string.vault_error_storage)
+        is VaultFormatException -> uiText(R.string.vault_error_format)
         is VaultKeyChangedException ->
-            "Bản sao cloud vừa được tạo lại hoặc đổi mật khẩu chủ ở máy khác. Nhấn Thử lại rồi nhập mật khẩu chủ mới."
+            uiText(R.string.vault_error_cloud_replaced)
         is VaultLocalReadException ->
-            "Không đọc được cấu hình ${error.groups.joinToString { it.label }} trên máy; chưa sao lưu để tránh làm mất bản trên cloud."
+            uiText(R.string.vault_error_local_read, UiText.Join(error.groups.map { uiText(it.labelRes) }))
         is VaultInvalidGroupException -> when (error.group) {
-            Group.TUYA -> "Tuya: cần đủ Client ID, Client Secret và Device ID hợp lệ."
-            Group.HUB -> "Hub: IPv4 phải là địa chỉ LAN; API key gồm đúng 64 ký tự ASCII."
-            Group.HTTPS -> "HTTPS: kiểm tra hostname/IPv4, cổng và SHA-256 fingerprint (64 ký tự hex)."
-            Group.WOL -> "WOL: MAC hoặc IP đích không hợp lệ."
-            Group.LABELS -> "Tên ổ cắm tối đa 24 ký tự, không chứa ký tự điều khiển."
+            Group.TUYA -> uiText(R.string.vault_error_tuya)
+            Group.HUB -> uiText(R.string.vault_error_hub)
+            Group.HTTPS -> uiText(R.string.vault_error_https)
+            Group.WOL -> uiText(R.string.vault_error_wol)
+            Group.LABELS -> uiText(R.string.vault_error_labels)
         }
-        is WeakPasswordException -> "Mật khẩu chủ tối thiểu 12 ký tự và hai lần nhập phải giống nhau"
-        else -> "Không thể đồng bộ cloud. Hãy kiểm tra kết nối rồi thử lại"
+        is WeakPasswordException -> uiText(R.string.vault_error_weak_password)
+        else -> uiText(R.string.vault_error_sync)
     }
 
     private fun isSynced(): Boolean = try { markers.syncedForInstall } catch (_: Exception) { false }

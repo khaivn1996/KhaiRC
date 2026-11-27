@@ -1,29 +1,31 @@
 package com.khaiit.kremote
 
-import android.Manifest
-import android.content.pm.PackageManager
-import android.os.Build
+import androidx.compose.ui.res.stringResource
+import com.khaiit.kremote.core.ui.text.asString
+import com.khaiit.kremote.core.ui.text.UiText
+import com.khaiit.kremote.core.ui.text.uiText
+import com.khaiit.kremote.core.ui.R as CoreUiR
+import com.khaiit.kremote.core.ui.components.DeviceCard
+import com.khaiit.kremote.core.ui.components.PowerIconButton
+import com.khaiit.kremote.core.ui.components.PowerTone
+import com.khaiit.kremote.core.ui.theme.KhaiRCDimens
+import com.khaiit.kremote.core.network.LOCAL_NETWORK_PERMISSION
+import com.khaiit.kremote.core.network.hasLocalNetworkPermission
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -41,7 +43,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.SecureFlagPolicy
-import androidx.core.content.ContextCompat
 
 @Composable
 fun MilifeDeviceCard(controller: MilifeController, modifier: Modifier = Modifier) {
@@ -54,67 +55,59 @@ fun MilifeDeviceCard(controller: MilifeController, modifier: Modifier = Modifier
         if (granted) controller.refresh() else controller.permissionDenied()
     }
     val refresh: () -> Unit = {
-        if (Build.VERSION.SDK_INT >= 37 && ContextCompat.checkSelfPermission(
-                context, Manifest.permission.ACCESS_LOCAL_NETWORK
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            permissionLauncher.launch(Manifest.permission.ACCESS_LOCAL_NETWORK)
+        if (!context.hasLocalNetworkPermission()) {
+            permissionLauncher.launch(LOCAL_NETWORK_PERMISSION)
         } else {
             controller.refresh()
         }
     }
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
-    ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Milife 10A", style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold)
-                    Text("ESP32 Hub · HTTPS → miIO LAN", style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                IconButton(onClick = { showSettings = true }, enabled = !state.busy,
-                    modifier = Modifier.size(44.dp)) {
-                    Icon(Icons.Filled.Settings, contentDescription = "Cấu hình ESP32 Hub")
-                }
-                IconButton(onClick = refresh, enabled = !state.busy && state.configured,
-                    modifier = Modifier.size(44.dp)) {
-                    Icon(Icons.Filled.Refresh, contentDescription = "Đọc lại trạng thái Milife")
-                }
+    DeviceCard(modifier) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.milife_title), style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.milife_subtitle), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text(
-                when (state.power) {
-                    true -> "Đang bật"
-                    false -> "Đang tắt"
-                    null -> "Chưa xác minh trạng thái"
-                },
-                style = MaterialTheme.typography.titleMedium,
-                color = if (state.power == null) MaterialTheme.colorScheme.onSurfaceVariant
-                    else MaterialTheme.colorScheme.secondary
+            IconButton(onClick = { showSettings = true }, enabled = !state.busy,
+                modifier = Modifier.size(KhaiRCDimens.HeaderIconButtonSize)) {
+                Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.milife_configure))
+            }
+            IconButton(onClick = refresh, enabled = !state.busy && state.configured,
+                modifier = Modifier.size(KhaiRCDimens.HeaderIconButtonSize)) {
+                Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.milife_refresh))
+            }
+        }
+        Text(
+            when (state.power) {
+                true -> stringResource(CoreUiR.string.common_state_on)
+                false -> stringResource(CoreUiR.string.common_state_off)
+                null -> stringResource(R.string.milife_unverified)
+            },
+            style = MaterialTheme.typography.titleMedium,
+            color = if (state.power == null) MaterialTheme.colorScheme.onSurfaceVariant
+                else MaterialTheme.colorScheme.secondary
+        )
+        Text(state.message.asString(), style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            PowerIconButton(
+                onClick = { controller.setPower(true) },
+                contentDescription = stringResource(CoreUiR.string.common_on),
+                tone = PowerTone.Primary,
+                enabled = !state.busy && state.power == false,
+                modifier = Modifier.weight(1f),
+                showLabel = true
             )
-            Text(state.message, style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedButton(
-                    onClick = { controller.setPower(true) },
-                    enabled = !state.busy && state.power == false,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("BẬT")
-                }
-                OutlinedButton(
-                    onClick = { controller.setPower(false) },
-                    enabled = !state.busy && state.power == true,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("TẮT")
-                }
-            }
+            PowerIconButton(
+                onClick = { controller.setPower(false) },
+                contentDescription = stringResource(CoreUiR.string.common_off),
+                tone = PowerTone.Danger,
+                enabled = !state.busy && state.power == true,
+                modifier = Modifier.weight(1f),
+                showLabel = true
+            )
         }
     }
 
@@ -122,26 +115,26 @@ fun MilifeDeviceCard(controller: MilifeController, modifier: Modifier = Modifier
         var address by remember { mutableStateOf(state.address) }
         // Secret is only held in this dialog's ephemeral state; never restored or displayed.
         var newKey by remember { mutableStateOf("") }
-        var error by remember { mutableStateOf<String?>(null) }
+        var error by remember { mutableStateOf<UiText?>(null) }
         AlertDialog(
             onDismissRequest = { showSettings = false },
             properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn),
-            title = { Text("Kết nối ESP32 Hub") },
+            title = { Text(stringResource(R.string.milife_settings_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Dùng chung cấu hình Hub đã mã hóa. Không nhập Xiaomi token.",
+                    Text(stringResource(R.string.milife_settings_intro),
                         style = MaterialTheme.typography.bodySmall)
                     OutlinedTextField(value = address, onValueChange = { address = it; error = null },
-                        label = { Text("IP của ESP32 Hub") },
+                        label = { Text(stringResource(R.string.milife_ip_label)) },
                         singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                         modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(value = newKey, onValueChange = { newKey = it; error = null },
-                        label = { Text("HUB_API_KEY") },
-                        supportingText = { Text(if (state.configured) "Để trống để giữ key đã lưu" else "Nhập key 64 ký tự") },
+                        label = { Text(stringResource(R.string.milife_key_label)) },
+                        supportingText = { Text(if (state.configured) stringResource(R.string.milife_keep_key) else stringResource(R.string.milife_enter_key)) },
                         singleLine = true, visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         modifier = Modifier.fillMaxWidth())
-                    error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                    error?.let { Text(it.asString(), color = MaterialTheme.colorScheme.error) }
                 }
             },
             confirmButton = {
@@ -150,12 +143,12 @@ fun MilifeDeviceCard(controller: MilifeController, modifier: Modifier = Modifier
                         newKey = ""
                         showSettings = false
                     } else {
-                        error = "Địa chỉ hoặc API key chưa hợp lệ."
+                        error = uiText(R.string.milife_invalid_input)
                     }
-                }) { Text("LƯU") }
+                }) { Text(stringResource(CoreUiR.string.common_save)) }
             },
             dismissButton = {
-                TextButton(onClick = { newKey = ""; showSettings = false }) { Text("HỦY") }
+                TextButton(onClick = { newKey = ""; showSettings = false }) { Text(stringResource(CoreUiR.string.common_cancel)) }
             }
         )
     }

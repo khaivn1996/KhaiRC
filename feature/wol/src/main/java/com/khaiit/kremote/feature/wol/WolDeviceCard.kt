@@ -1,27 +1,26 @@
 package com.khaiit.kremote.feature.wol
 
-import android.Manifest
-import android.content.pm.PackageManager
-import android.os.Build
+import androidx.compose.ui.res.stringResource
+import com.khaiit.kremote.core.ui.text.asString
+import com.khaiit.kremote.core.ui.text.UiText
+import com.khaiit.kremote.core.ui.text.uiText
+import com.khaiit.kremote.core.ui.components.DeviceCard
+import com.khaiit.kremote.core.ui.components.PowerIconButton
+import com.khaiit.kremote.core.ui.components.PowerTone
+import com.khaiit.kremote.core.ui.theme.KhaiRCDimens
+import com.khaiit.kremote.core.network.LOCAL_NETWORK_PERMISSION
+import com.khaiit.kremote.core.network.hasLocalNetworkPermission
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,11 +35,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.clickable
 
@@ -79,15 +76,15 @@ fun WolDeviceCard(
     }
 
     var macError by remember {
-        mutableStateOf<String?>(null)
+        mutableStateOf<UiText?>(null)
     }
 
     var targetIpError by remember {
-        mutableStateOf<String?>(null)
+        mutableStateOf<UiText?>(null)
     }
 
     var statusText by remember {
-        mutableStateOf<String?>(null)
+        mutableStateOf<UiText?>(null)
     }
 
     /*
@@ -98,20 +95,19 @@ fun WolDeviceCard(
         coroutineScope.launch {
 
             statusText =
-                "Đang gửi Wake-on-LAN..."
+                uiText(R.string.wol_sending)
 
             controller
                 .wake()
                 .onSuccess {
 
                     statusText =
-                        "Đã gửi gói Wake tới ${config.targetIp}:9 · Chưa xác minh PC đã bật"
+                        uiText(R.string.wol_wake_sent, config.targetIp)
                 }
                 .onFailure { error ->
 
                     statusText =
-                        error.message
-                            ?: "Không thể gửi Wake-on-LAN"
+                        error.message?.let(UiText::Raw) ?: uiText(R.string.wol_send_failed)
                 }
         }
     }
@@ -134,231 +130,127 @@ fun WolDeviceCard(
             } else {
 
                 statusText =
-                    "Cần quyền Local network để Wake-on-LAN"
+                    uiText(R.string.wol_lan_permission)
             }
         }
 
-    Card(
-        modifier =
-            modifier.fillMaxWidth(),
+    val openConfigDialog: () -> Unit = {
+        macInput = config.macAddress
+        targetIpInput = config.targetIp
+        macError = null
+        targetIpError = null
+        showConfigDialog = true
+    }
 
-        shape =
-            RoundedCornerShape(20.dp),
-
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)),
-
-        colors =
-            CardDefaults.cardColors(
-                containerColor =
-                    MaterialTheme.colorScheme.surfaceContainer
-            )
-    ) {
-
-        Column(
+    DeviceCard(modifier) {
+        /*
+         * Header:
+         *
+         * PC                          POWER
+         * D8:BB:C1:DC:2E:40
+         */
+        Row(
             modifier =
-                Modifier.padding(16.dp)
+                Modifier.fillMaxWidth(),
+
+            verticalAlignment =
+                Alignment.CenterVertically
         ) {
 
-            /*
-             * Header:
-             *
-             * PC                          POWER
-             * D8:BB:C1:DC:2E:41
-             */
-            Row(
+            Column(
                 modifier =
-                    Modifier.fillMaxWidth(),
-
-                verticalAlignment =
-                    Alignment.CenterVertically
+                    Modifier.weight(1f)
             ) {
 
-                Column(
+                Row(
                     modifier =
-                        Modifier.weight(1f)
-                ) {
+                        Modifier.fillMaxWidth(),
 
-//                    Text(
-//                        text = "PC",
-//
-//                        style =
-//                            MaterialTheme.typography.titleLarge,
-//
-//                        fontWeight =
-//                            FontWeight.Bold
-//                    )
-                    Row(
-                        modifier =
-                            Modifier.fillMaxWidth(),
-
-                        verticalAlignment =
-                            Alignment.CenterVertically
-                    ){
-                        Text(
-                            text = "PC",
-
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable {
-                                    macInput = config.macAddress
-                                    targetIpInput = config.targetIp
-                                    macError = null
-                                    targetIpError = null
-                                    showConfigDialog = true
-                                },
-
-                            style =
-                                MaterialTheme.typography.titleLarge,
-
-                            fontWeight =
-                                FontWeight.Bold
-
-
-                        )
-                    }
-
+                    verticalAlignment =
+                        Alignment.CenterVertically
+                ){
                     Text(
-                        text =
-                            config.macAddress,
+                        text = stringResource(R.string.wol_title),
+
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable(onClick = openConfigDialog),
 
                         style =
-                            MaterialTheme.typography.bodyMedium,
+                            MaterialTheme.typography.titleLarge,
 
-                        color =
-                            MaterialTheme.colorScheme
-                                .onSurfaceVariant
-                    )
-                    Text(
-                        text = "Wake-on-LAN · Không đọc trạng thái PC",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontWeight =
+                            FontWeight.Bold
+
+
                     )
                 }
-
-                /*
-                 * WAKE / ON
-                 *
-                 * Nút Power màu đỏ đồng bộ với quạt trần.
-                 * Wake-on-LAN chỉ gửi lệnh bật, không xác định trạng thái PC.
-                 */
-                IconButton(
-                    onClick = {
-
-                        val needsPermission =
-                            Build.VERSION.SDK_INT >= 37 &&
-                                    ContextCompat.checkSelfPermission(
-                                        context,
-                                        Manifest.permission.ACCESS_LOCAL_NETWORK
-                                    ) != PackageManager.PERMISSION_GRANTED
-
-                        if (needsPermission) {
-
-                            permissionLauncher.launch(
-                                Manifest.permission.ACCESS_LOCAL_NETWORK
-                            )
-
-                        } else {
-
-                            sendWakePacket()
-                        }
-                    },
-
-                    modifier =
-                        Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.error)
-                ) {
-
-                    Icon(
-                        imageVector =
-                            Icons.Filled.PowerSettingsNew,
-
-                        contentDescription =
-                            "Gửi gói Wake-on-LAN đến PC",
-
-                        tint =
-                            MaterialTheme.colorScheme.onPrimary,
-
-                        modifier =
-                            Modifier.size(24.dp)
-                    )
-                }
-            }
-
-            Spacer(
-                modifier =
-                    Modifier.size(8.dp)
-            )
-
-//            /*
-//             * CHANGE
-//             */
-//            Row(
-//                modifier =
-//                    Modifier.fillMaxWidth(),
-//
-//                horizontalArrangement =
-//                    Arrangement.End
-//            ) {
-//
-//                IconButton(
-//                    onClick = {
-//
-//                        macInput =
-//                            config.macAddress
-//
-//                        targetIpInput =
-//                            config.targetIp
-//
-//                        macError =
-//                            null
-//
-//                        targetIpError =
-//                            null
-//
-//                        showConfigDialog =
-//                            true
-//                    },
-//                    modifier = Modifier.size(48.dp)
-//                ) {
-//
-//                    Icon(
-//                        imageVector =
-//                            Icons.Filled.Edit,
-//
-//                        contentDescription =
-//                            "Chỉnh cấu hình Wake-on-LAN",
-//
-//                        modifier =
-//                            Modifier.size(18.dp)
-//                    )
-//                }
-//            }
-
-            /*
-             * Status / debug.
-             *
-             * Trong giai đoạn test giữ IP + port để dễ debug.
-             */
-            statusText?.let { status ->
-
-                Spacer(
-                    modifier =
-                        Modifier.size(12.dp)
-                )
 
                 Text(
-                    text = status,
+                    text =
+                        config.macAddress,
 
                     style =
-                        MaterialTheme.typography.bodySmall,
+                        MaterialTheme.typography.bodyMedium,
 
                     color =
                         MaterialTheme.colorScheme
                             .onSurfaceVariant
                 )
+                Text(
+                    text = stringResource(R.string.wol_subtitle),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
+
+            /*
+             * WAKE / ON
+             *
+             * Nút Power màu đỏ đồng bộ với quạt trần.
+             * Wake-on-LAN chỉ gửi lệnh bật, không xác định trạng thái PC.
+             */
+            IconButton(
+                onClick = openConfigDialog,
+                modifier = Modifier.size(KhaiRCDimens.HeaderIconButtonSize)
+            ) {
+                Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.wol_edit_config))
+            }
+            PowerIconButton(
+                onClick = {
+                    if (!context.hasLocalNetworkPermission()) {
+                        permissionLauncher.launch(LOCAL_NETWORK_PERMISSION)
+                    } else {
+                        sendWakePacket()
+                    }
+                },
+                contentDescription = stringResource(R.string.wol_wake),
+                tone = PowerTone.Danger,
+                iconSize = 24.dp
+            )
+        }
+
+
+
+        /*
+         * Status / debug.
+         *
+         * Trong giai đoạn test giữ IP + port để dễ debug.
+         */
+        statusText?.let { status ->
+
+
+            Text(
+                text = status.asString(),
+                modifier = Modifier.padding(top = 8.dp),
+
+                style =
+                    MaterialTheme.typography.bodySmall,
+
+                color =
+                    MaterialTheme.colorScheme
+                        .onSurfaceVariant
+            )
         }
     }
 
@@ -377,7 +269,7 @@ fun WolDeviceCard(
             title = {
 
                 Text(
-                    "PC Wake-on-LAN"
+                    stringResource(R.string.wol_config_title)
                 )
             },
 
@@ -413,7 +305,7 @@ fun WolDeviceCard(
                         label = {
 
                             Text(
-                                "MAC Address"
+                                stringResource(R.string.wol_mac_address)
                             )
                         },
 
@@ -431,7 +323,7 @@ fun WolDeviceCard(
 
                             macError?.let {
 
-                                Text(it)
+                                Text(it.asString())
                             }
                         }
                     )
@@ -461,7 +353,7 @@ fun WolDeviceCard(
                         label = {
 
                             Text(
-                                "Target IP"
+                                stringResource(R.string.wol_target_ip)
                             )
                         },
 
@@ -479,7 +371,7 @@ fun WolDeviceCard(
 
                             targetIpError?.let {
 
-                                Text(it)
+                                Text(it.asString())
                             }
                         }
                     )
@@ -518,41 +410,18 @@ fun WolDeviceCard(
                             }
                             .onFailure { error ->
 
-                                val message =
-                                    error.message
-                                        ?: "Thông tin Wake-on-LAN không hợp lệ"
-
+                                val message = error.message
                                 when {
-
-                                    message.contains(
-                                        "MAC",
-                                        ignoreCase = true
-                                    ) -> {
-
-                                        macError =
-                                            message
-                                    }
-
-                                    message.contains(
-                                        "Target IP",
-                                        ignoreCase = true
-                                    ) -> {
-
-                                        targetIpError =
-                                            message
-                                    }
-
-                                    else -> {
-
-                                        macError =
-                                            message
-                                    }
+                                    message == null -> macError = uiText(R.string.wol_invalid_config)
+                                    message.contains("MAC", ignoreCase = true) -> macError = UiText.Raw(message)
+                                    message.contains("Target IP", ignoreCase = true) -> targetIpError = UiText.Raw(message)
+                                    else -> macError = UiText.Raw(message)
                                 }
                             }
                     }
                 ) {
 
-                    Text("SET")
+                    Text(stringResource(R.string.wol_set))
                 }
             },
 
@@ -569,7 +438,7 @@ fun WolDeviceCard(
                     }
                 ) {
 
-                    Text("CANCEL")
+                    Text(stringResource(R.string.wol_cancel))
                 }
             }
         )

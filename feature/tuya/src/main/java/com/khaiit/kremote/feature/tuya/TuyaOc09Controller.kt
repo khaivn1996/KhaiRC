@@ -1,5 +1,7 @@
 package com.khaiit.kremote.feature.tuya
 
+import com.khaiit.kremote.core.ui.text.UiText
+import com.khaiit.kremote.core.ui.text.uiText
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -23,7 +25,7 @@ class TuyaOc09Controller(
         runCatching { configStore.load() }.onSuccess { config ->
             state = state.copy(configured = config != null)
         }.onFailure {
-            state = state.copy(message = "Không đọc được cấu hình Tuya đã lưu. Hãy nhập lại cấu hình.")
+            state = state.copy(message = uiText(R.string.tuya_config_unreadable))
         }
     }
 
@@ -46,7 +48,7 @@ class TuyaOc09Controller(
             } catch (cancel: CancellationException) {
                 throw cancel
             } catch (e: Exception) {
-                state = state.copy(message = e.message ?: "Không thể lưu cấu hình")
+                state = state.copy(message = e.message?.let(UiText::Raw) ?: uiText(R.string.tuya_save_failed))
             } finally {
                 state = state.copy(busy = false)
             }
@@ -59,7 +61,7 @@ class TuyaOc09Controller(
         operationMutex.withLock {
             val credentials = runCatching { withContext(Dispatchers.IO) { configStore.load() } }
                 .getOrElse {
-                    state = state.copy(verified = false, message = "Không đọc được cấu hình Tuya")
+                    state = state.copy(verified = false, message = uiText(R.string.tuya_config_read_failed))
                     return@withLock
                 }
             if (credentials == null) {
@@ -73,7 +75,10 @@ class TuyaOc09Controller(
             } catch (cancel: CancellationException) {
                 throw cancel
             } catch (e: Exception) {
-                state = state.copy(verified = false, message = "Không cập nhật được trạng thái: ${e.message ?: "Lỗi mạng"}")
+                state = state.copy(verified = false, message = uiText(
+                    R.string.tuya_refresh_failed,
+                    e.message?.let(UiText::Raw) ?: uiText(R.string.tuya_network_error)
+                ))
             } finally {
                 state = state.copy(busy = false)
             }
@@ -101,7 +106,10 @@ class TuyaOc09Controller(
                 throw cancel
             } catch (e: Exception) {
                 // Never claim an ON/OFF transition if confirmation did not succeed.
-                state = state.copy(verified = false, message = "Chưa xác minh được lệnh: ${e.message ?: "Lỗi mạng"}. Hãy Refresh.")
+                state = state.copy(verified = false, message = uiText(
+                    R.string.tuya_toggle_failed,
+                    e.message?.let(UiText::Raw) ?: uiText(R.string.tuya_network_error)
+                ))
             } finally {
                 state = state.copy(busy = false)
             }
@@ -151,8 +159,10 @@ class TuyaOc09Controller(
             } catch (e: Exception) {
                 state = state.copy(
                     verified = false,
-                    message = "Power tổng chưa xác minh được cả 6 kênh: " +
-                        "${e.message ?: "Lỗi mạng"}. Hãy Refresh để kiểm tra trạng thái từng ổ."
+                    message = uiText(
+                        R.string.tuya_master_failed,
+                        e.message?.let(UiText::Raw) ?: uiText(R.string.tuya_network_error)
+                    )
                 )
             } finally {
                 state = state.copy(busy = false)

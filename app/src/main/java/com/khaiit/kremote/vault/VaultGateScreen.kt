@@ -1,5 +1,11 @@
 package com.khaiit.kremote.vault
 
+import androidx.compose.ui.res.stringResource
+import com.khaiit.kremote.core.ui.text.asString
+import com.khaiit.kremote.core.ui.text.UiText
+import com.khaiit.kremote.core.ui.text.uiText
+import com.khaiit.kremote.core.ui.R as CoreUiR
+import com.khaiit.kremote.R
 import android.app.Activity
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -27,37 +33,37 @@ fun VaultGateScreen(controller: VaultController) {
                 .verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("Sao lưu cloud", style = MaterialTheme.typography.headlineMedium)
-            Text("Bản sao được mã hóa bằng mật khẩu chủ. Hãy giữ mật khẩu ở nơi an toàn.")
+            Text(stringResource(R.string.vault_title), style = MaterialTheme.typography.headlineMedium)
+            Text(stringResource(R.string.vault_intro))
             when (val state = controller.state) {
                 VaultUiState.Ready -> Unit
                 VaultUiState.Checking -> CircularProgressIndicator()
                 VaultUiState.NeedSignIn -> {
-                    Text("Đăng nhập Google để tìm bản sao của bạn.")
-                    Button(onClick = { controller.signIn(activity) }) { Text("Đăng nhập Google") }
+                    Text(stringResource(R.string.vault_sign_in_hint))
+                    Button(onClick = { controller.signIn(activity) }) { Text(stringResource(R.string.vault_sign_in)) }
                     SkipButton(controller)
                 }
                 is VaultUiState.NeedPassword -> {
                     var password by remember { mutableStateOf("") }
-                    Text("Đã tìm thấy bản sao. Nhập mật khẩu chủ để khôi phục các nhóm còn trống.")
-                    VaultInput("Mật khẩu chủ", password, { password = it }, secret = true)
-                    state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                    Text(stringResource(R.string.vault_found))
+                    VaultInput(stringResource(R.string.vault_password), password, { password = it }, secret = true)
+                    state.error?.let { Text(it.asString(), color = MaterialTheme.colorScheme.error) }
                     Button(onClick = {
                         val chars = password.toCharArray()
                         password = ""
                         controller.unlock(chars)
-                    }, enabled = password.isNotEmpty()) { Text("Mở bản sao") }
-                    TextButton(onClick = controller::forgotPassword) { Text("Quên mật khẩu") }
+                    }, enabled = password.isNotEmpty()) { Text(stringResource(R.string.vault_open)) }
+                    TextButton(onClick = controller::forgotPassword) { Text(stringResource(R.string.vault_forgot)) }
                     SkipButton(controller)
                 }
                 is VaultUiState.NeedSetup -> VaultSetupForm(controller, state.localGroups, state.error, fields)
                 is VaultUiState.Working -> {
                     CircularProgressIndicator()
-                    Text(state.msg)
+                    Text(state.msg.asString())
                 }
                 is VaultUiState.Error -> {
-                    Text(state.msg, color = MaterialTheme.colorScheme.error)
-                    Button(onClick = controller::start) { Text("Thử lại") }
+                    Text(state.msg.asString(), color = MaterialTheme.colorScheme.error)
+                    Button(onClick = controller::start) { Text(stringResource(R.string.vault_retry)) }
                     if (state.canSkip) SkipButton(controller)
                 }
             }
@@ -67,20 +73,20 @@ fun VaultGateScreen(controller: VaultController) {
 
 @Composable
 private fun SkipButton(controller: VaultController) {
-    TextButton(onClick = controller::skipThisSession) { Text("Bỏ qua lần này") }
+    TextButton(onClick = controller::skipThisSession) { Text(stringResource(R.string.vault_skip)) }
 }
 
 @Composable
 private fun VaultSetupForm(
     controller: VaultController,
     localGroups: Set<Group>,
-    setupError: String?,
+    setupError: UiText?,
     fields: SnapshotStateMap<String, String>
 ) {
     var password by remember { mutableStateOf("") }
     var confirm by remember { mutableStateOf("") }
     var showOverwrite by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
+    var error by remember { mutableStateOf<UiText?>(null) }
     fun value(key: String): String = fields[key].orEmpty()
     fun submit() {
         val form = VaultBundle(
@@ -105,46 +111,46 @@ private fun VaultSetupForm(
         error = null
         controller.setup(form, chars, confirmed)
     }
-    Text(if (controller.replacingCloud) "Tạo bản sao thay thế" else "Chưa có bản sao")
+    Text(if (controller.replacingCloud) stringResource(R.string.vault_replace) else stringResource(R.string.vault_missing))
     if (controller.replacingCloud) {
-        Text("Không thể lấy lại dữ liệu cũ nếu quên mật khẩu chủ. Nhập lại cấu hình cần giữ trong bản sao mới.")
+        Text(stringResource(R.string.vault_replace_hint))
     }
     fun validate(): Boolean {
         error = if (password.length < VaultCrypto.MIN_PASSWORD || password != confirm)
-            "Mật khẩu chủ tối thiểu 12 ký tự và hai lần nhập phải giống nhau" else null
+            uiText(R.string.vault_error_weak_password) else null
         return error == null
     }
     val groups = listOf(
-        Triple(Group.TUYA, "Tuya", listOf("clientId" to "Client ID", "clientSecret" to "Client Secret", "deviceId" to "Device ID")),
-        Triple(Group.HUB, "Hub", listOf("ipv4" to "IPv4 Hub", "apiKey" to "API key")),
-        Triple(Group.HTTPS, "HTTPS", listOf("host" to "Hostname hoặc IPv4", "port" to "Cổng HTTPS (mặc định 443)", "pin" to "SHA-256 fingerprint")),
-        Triple(Group.WOL, "WOL", listOf("mac" to "MAC", "ip" to "IP đích")),
-        Triple(Group.LABELS, "Tên ổ cắm", TuyaChannel.ALL.map { it.code to it.label })
+        Triple(Group.TUYA, stringResource(R.string.vault_group_tuya), listOf("clientId" to stringResource(CoreUiR.string.common_client_id), "clientSecret" to stringResource(CoreUiR.string.common_client_secret), "deviceId" to stringResource(R.string.vault_device_id))),
+        Triple(Group.HUB, stringResource(R.string.vault_group_hub), listOf("ipv4" to stringResource(R.string.vault_ipv4), "apiKey" to stringResource(R.string.vault_api_key))),
+        Triple(Group.HTTPS, stringResource(R.string.vault_group_https), listOf("host" to stringResource(R.string.vault_host), "port" to stringResource(R.string.vault_port), "pin" to stringResource(R.string.vault_fingerprint))),
+        Triple(Group.WOL, stringResource(R.string.vault_group_wol), listOf("mac" to stringResource(R.string.vault_mac), "ip" to stringResource(R.string.vault_target_ip))),
+        Triple(Group.LABELS, stringResource(R.string.vault_labels_title), TuyaChannel.ALL.map { it.code to it.label })
     )
     groups.forEach { (group, title, inputs) ->
         Text(title, style = MaterialTheme.typography.titleMedium)
-        if (group in localGroups) Text("Đã có trên máy – để trống để giữ")
-        else Text("Chưa có trên máy – có thể cấu hình sau")
+        if (group in localGroups) Text(stringResource(R.string.vault_existing_group))
+        else Text(stringResource(R.string.vault_missing_group))
         inputs.forEach { (key, label) ->
             VaultInput(label, value(key), { fields[key] = it },
                 secret = group == Group.TUYA || key == "apiKey" || key == "pin")
         }
     }
-    VaultInput("Mật khẩu chủ mới", password, { password = it }, secret = true)
-    VaultInput("Xác nhận mật khẩu chủ", confirm, { confirm = it }, secret = true)
-    (error ?: setupError)?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+    VaultInput(stringResource(R.string.vault_new_password), password, { password = it }, secret = true)
+    VaultInput(stringResource(R.string.vault_confirm_password), confirm, { confirm = it }, secret = true)
+    (error ?: setupError)?.let { Text(it.asString(), color = MaterialTheme.colorScheme.error) }
     Button(onClick = {
         if (validate()) {
             if (controller.replacingCloud) showOverwrite = true else submit()
         }
-    }) { Text("Lưu bản sao mã hóa") }
+    }) { Text(stringResource(R.string.vault_save_encrypted)) }
     SkipButton(controller)
     if (showOverwrite) AlertDialog(
         onDismissRequest = { showOverwrite = false },
-        title = { Text("Ghi đè bản sao cloud?") },
-        text = { Text("Bản sao cũ sẽ được thay thế bằng cấu hình trên máy và dữ liệu vừa nhập. Dữ liệu chỉ có trong bản sao cũ sẽ mất.") },
-        confirmButton = { TextButton(onClick = { showOverwrite = false; submit() }) { Text("Xác nhận ghi đè") } },
-        dismissButton = { TextButton(onClick = { showOverwrite = false }) { Text("Hủy") } }
+        title = { Text(stringResource(R.string.vault_overwrite_title)) },
+        text = { Text(stringResource(R.string.vault_overwrite_warning)) },
+        confirmButton = { TextButton(onClick = { showOverwrite = false; submit() }) { Text(stringResource(R.string.vault_overwrite)) } },
+        dismissButton = { TextButton(onClick = { showOverwrite = false }) { Text(stringResource(R.string.vault_cancel)) } }
     )
 }
 

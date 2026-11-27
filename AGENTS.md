@@ -13,19 +13,19 @@ Code tại HEAD > `AGENTS.md` (quy tắc bắt buộc) > `docs/PROJECT_SPEC.md` 
 - **TUYỆT ĐỐI KHÔNG** đọc, in hoặc đưa vào ngữ cảnh: `*.jks`, `*.keystore`, `keystore.properties`, `.env`, giá trị thật của Tuya Client ID/Secret/Device ID, `HUB_API_KEY`.
 - **KHÔNG** quét/tìm kiếm trong `build/`, `**/build/`, `.gradle/`, `.kotlin/`, `.idea/`, `.git/`, `*.patch`, `*.apk` (ngoại lệ: đọc đúng `build/gradle.log` theo §4).
 - Đọc chéo repo Hub `D:\IoT\KhaiRC-ESP32-Hub` (nếu có trên máy) chỉ qua `python D:\IoT\KhaiRC-ESP32-Hub\tools\spec.py <mục>`; cấm đọc `include/secrets.h`, `include/ota_password.h`, `include/tls_private_key.pem`, `include/tls_credentials.h`, `include/miot_config.h` của repo đó.
-- Trước khi sửa một file `.kt`, đọc trọn file (trạng thái `private`/`internal` và companion constant nằm rải rác; file lớn nhất là `core/network/.../HubClient.kt` ~420 dòng).
+- Trước khi sửa một file `.kt`, đọc trọn file (trạng thái `private`/`internal` và companion constant nằm rải rác).
 
 ## 2. Ràng buộc nền tảng
 - minSdk 26, compileSdk/targetSdk 37, Java 11, AGP 9.3.2, Kotlin 2.2.10, Compose BOM (`gradle/libs.versions.toml`, `app/build.gradle.kts`).
 - Không DI framework: mọi controller được khởi tạo thủ công trong `MainActivity.onCreate` (`app/.../MainActivity.kt`). Không thêm dependency/thư viện mới khi chưa hỏi người dùng.
-- Chuỗi UI tiếng Việt, viết trực tiếp trong Compose; giữ nguyên ngôn ngữ đó.
+- Chuỗi UI tiếng Việt nằm trong `strings.xml` của module. Theme và component dùng chung nằm ở `:core:ui`.
 - Môi trường: Windows + PowerShell. Không có `adb`/thiết bị trong vòng lặp agent.
 
 ## 3. Bất biến điều khiển & bảo mật
 - **Một lần nhấn = tối đa một lệnh.** Không auto-retry POST/IR. Chỉ GET đọc trạng thái được retry: `TuyaTokenRecovery.call(retryReadOnly = true, …)` thử lại một lần khi mã token `1010/1011/1012/1400`.
 - **Không báo thành công từ POST.** Tuya đọc lại qua `TuyaOc09Controller.readStatusUntilConfirmed`/`readAllStatusUntilConfirmed` (chỉ đọc, không gửi lại lệnh). Trạng thái IR và Toshiba-qua-Hub là *ước lượng*; kết quả `Uncertain` bật `needsManualCheck` trong `ToshibaHttpsControlsController.submit` và chặn lệnh tới khi `confirmObserved()`. Chỉ lưu state cục bộ sau ack hợp lệ.
 - **TLS Hub:** chỉ tin leaf đã pin qua `PinnedSelfSignedTrustManager.checkServerTrusted` (`HubHttpsProbe.kt`); giữ `HttpsURLConnection.getDefaultHostnameVerifier()`, `instanceFollowRedirects = false`, `Proxy.NO_PROXY`, không fallback HTTP, giới hạn body phản hồi 2048 B. Cấm trust-all/`HostnameVerifier` dễ dãi.
-- Body JSON gửi Hub chỉ dựng từ từ vựng cố định (`ToshibaHttpsAction`, `HubCommand`); không đưa input người dùng vào body.
+- Body JSON gửi Hub chỉ dựng từ từ vựng cố định (`ToshibaHttpsAction`, `milifePowerBody`); không đưa input người dùng vào body.
 - Ánh xạ OC09 cố định: ổ 1–5 = `switch_5`..`switch_1`, USB = `switch_6` (`TuyaChannel.ALL`); Power tổng = một POST sáu lệnh.
 - Secret không hardcode, không điền sẵn vào dialog, che trong `toString()` (`TuyaCredentials`, `HubConfig`, `HubSettings`, `HubHttpsEndpoint`). Thêm SharedPreferences chứa secret thì mã hóa AES-GCM/Android Keystore và thêm vào cả `backup_rules.xml` lẫn `data_extraction_rules.xml`.
 - Gọi mạng LAN phải qua lambda `networkAllowed` (kiểm `ACCESS_LOCAL_NETWORK` khi SDK ≥ 37).

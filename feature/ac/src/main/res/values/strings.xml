@@ -1,0 +1,18 @@
+<resources>
+    <string name="daikin_mode_auto">Auto</string>
+    <string name="daikin_mode_cool">Cool</string>
+    <string name="daikin_mode_dry">Dry</string>
+    <string name="daikin_mode_fan">Fan</string>
+    <string name="daikin_mode_heat">Heat</string>
+    <string name="daikin_fan_low">Low</string>
+    <string name="daikin_fan_high">High</string>
+    <string name="daikin_summary">%1$s • Fan %2$s • Swing %3$s</string>
+    <string name="daikin_swing_on">ON</string>
+    <string name="daikin_swing_off">OFF</string>
+    <string name="daikin_title">Daikin AC</string>
+    <string name="daikin_ir_ready">IR · Trạng thái lưu trên máy</string>
+    <string name="daikin_power_off">Gửi lệnh tắt Daikin AC</string>
+    <string name="daikin_power_on">Gửi lệnh bật Daikin AC</string>
+    <string name="daikin_mode">MODE</string>
+    <string name="daikin_speed">SPEED</string>
+</resources>

@@ -14,9 +14,6 @@ class DaikinAcController(
     val isIrAvailable: Boolean
         get() = irTransmitter.isAvailable
 
-    val protocolName: String
-        get() = encoder.encode(state).profileName
-
     fun togglePower(): DaikinAcState = updateAndTransmit {
         copy(power = !power)
     }
@@ -55,11 +52,6 @@ class DaikinAcController(
         return setMode(
             state.mode.next()
         )
-    }
-
-    fun resendCurrentState(): DaikinAcState {
-        transmit(state)
-        return state
     }
 
     private fun updateAndTransmit(

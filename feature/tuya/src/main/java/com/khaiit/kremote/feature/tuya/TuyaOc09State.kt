@@ -1,5 +1,7 @@
 package com.khaiit.kremote.feature.tuya
 
+import com.khaiit.kremote.core.ui.text.UiText
+
 /** Verified mapping of the Ralli / Rang Dong OC09, NOT numeric Tuya DP order. */
 data class TuyaChannel(val label: String, val code: String) {
     companion object {
@@ -20,7 +22,7 @@ data class TuyaOc09State(
     val channelValues: Map<String, Boolean> = emptyMap(),
     val verified: Boolean = false,
     val busy: Boolean = false,
-    val message: String? = null
+    val message: UiText? = null
 ) {
     /** Never infer OFF from missing or stale data. */
     fun channelPower(code: String): Boolean? = if (verified) channelValues[code] else null

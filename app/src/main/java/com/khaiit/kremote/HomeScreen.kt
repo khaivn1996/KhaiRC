@@ -1,7 +1,12 @@
 package com.khaiit.kremote
 
+import androidx.compose.ui.res.stringResource
+import com.khaiit.kremote.core.ui.components.pressScale
+import androidx.annotation.StringRes
+import com.khaiit.kremote.core.ui.theme.BackgroundGradientTop
+import com.khaiit.kremote.core.ui.theme.BackgroundGradientBottom
+import com.khaiit.kremote.core.ui.theme.KhaiRCDimens
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -18,7 +23,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
@@ -44,15 +48,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.khaiit.kremote.feature.ac.daikin.DaikinAcController
 import com.khaiit.kremote.feature.ac.daikin.DaikinAcDeviceCard
-import com.khaiit.kremote.feature.ac.toshiba.ToshibaAcController
 import com.khaiit.kremote.feature.fan.FanDeviceCard
 import com.khaiit.kremote.feature.tuya.TuyaOc09Controller
 import com.khaiit.kremote.feature.tuya.TuyaOc09DeviceCard
@@ -61,10 +62,14 @@ import com.khaiit.kremote.feature.wol.WolDeviceCard
 import com.khaiit.kremote.vault.VaultController
 import com.khaiit.kremote.vault.VaultCard
 
-private enum class HomeTab(val label: String, val subtitle: String, val icon: ImageVector) {
-    ALL("Tất cả", "6 thiết bị · IR / LAN / Cloud", Icons.Filled.Apps),
-    IR("Hồng ngoại", "3 thiết bị điều khiển IR", Icons.Filled.SettingsRemote),
-    NETWORK("Mạng", "3 thiết bị · LAN / Cloud", Icons.Filled.Lan)
+private enum class HomeTab(
+    @StringRes val labelRes: Int,
+    @StringRes val subtitleRes: Int,
+    val icon: ImageVector
+) {
+    ALL(R.string.home_all_label, R.string.home_all_subtitle, Icons.Filled.Apps),
+    IR(R.string.home_ir_label, R.string.home_ir_subtitle, Icons.Filled.SettingsRemote),
+    NETWORK(R.string.home_network_label, R.string.home_network_subtitle, Icons.Filled.Lan)
 }
 
 @Composable
@@ -75,7 +80,6 @@ fun HomeScreen(
     onFanOff: () -> Unit,
     wolController: WolController,
     daikinAcController: DaikinAcController,
-    toshibaAcController: ToshibaAcController,
     toshibaHttpsControlsController: ToshibaHttpsControlsController,
     tuyaOc09Controller: TuyaOc09Controller,
     milifeController: MilifeController,
@@ -112,7 +116,7 @@ fun HomeScreen(
                 .padding(innerPadding)
                 .background(
                     Brush.verticalGradient(
-                        listOf(Color(0xFF0A101C), Color(0xFF0E192A))
+                        listOf(BackgroundGradientTop, BackgroundGradientBottom)
                     )
                 )
         ) {
@@ -120,7 +124,7 @@ fun HomeScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 18.dp),
+                    .padding(horizontal = KhaiRCDimens.ScreenPadding, vertical = 18.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
@@ -133,12 +137,12 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        "Khai RC",
+                        stringResource(R.string.app_name),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        selectedTab.subtitle,
+                        stringResource(selectedTab.subtitleRes),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -150,9 +154,9 @@ fun HomeScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(currentScrollState)
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = KhaiRCDimens.ScreenPadding)
                     .padding(bottom = 18.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(KhaiRCDimens.CardSpacing)
             ) {
                 // Reuse the existing full-featured cards without changing IR/WOL/Tuya logic.
                 if (selectedTab == HomeTab.ALL || selectedTab == HomeTab.IR) {
@@ -201,12 +205,7 @@ private fun CompactDarkTechNavigationBar(
             HomeTab.entries.forEach { tab ->
                 val active = selected == tab
                 val tabInteraction = remember(tab) { MutableInteractionSource() }
-                val tabPressed by tabInteraction.collectIsPressedAsState()
-                val tabScale by animateFloatAsState(
-                    targetValue = if (tabPressed) 0.96f else 1f,
-                    animationSpec = tween(durationMillis = 110),
-                    label = "nav_press_${tab.name}"
-                )
+
                 val tabBackground by animateColorAsState(
                     targetValue = if (active) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
                         else Color.Transparent,
@@ -230,11 +229,8 @@ private fun CompactDarkTechNavigationBar(
                         .weight(1f)
                         .fillMaxHeight()
                         .padding(vertical = 5.dp)
-                        .graphicsLayer {
-                            scaleX = tabScale
-                            scaleY = tabScale
-                        }
-                        .clip(RoundedCornerShape(14.dp))
+                        .pressScale(tabInteraction, enabled = true)
+                        .clip(MaterialTheme.shapes.medium)
                         .background(tabBackground)
                         .selectable(
                             selected = active,
@@ -254,8 +250,8 @@ private fun CompactDarkTechNavigationBar(
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        text = tab.label,
-                        fontSize = 11.sp,
+                        text = stringResource(tab.labelRes),
+                        style = MaterialTheme.typography.labelSmall,
                         fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
                         color = tabTextTint,
                         maxLines = 1

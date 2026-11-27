@@ -67,7 +67,7 @@ class AndroidWakeOnLanSender : WakeOnLanSender {
          *
          * OpenWrt có permanent neighbor:
          *
-         * 192.168.2.19 -> D8:BB:C1:DC:2E:41
+         * 192.168.2.19 -> D8:BB:C1:DC:2E:40
          *
          * nên vẫn gửi Ethernet frame tới PC được khi PC đang OFF.
          * =========================================================

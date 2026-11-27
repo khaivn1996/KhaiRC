@@ -1,0 +1,20 @@
+<resources>
+    <string name="common_save">LƯU</string>
+    <string name="common_cancel">HỦY</string>
+    <string name="common_on">BẬT</string>
+    <string name="common_off">TẮT</string>
+    <string name="common_state_on">Đang bật</string>
+    <string name="common_state_off">Đang tắt</string>
+    <string name="common_ir_unavailable">Không có bộ phát IR</string>
+    <string name="common_ir_command_failed">IR command failed</string>
+    <string name="common_temperature_c">%1$d °C</string>
+    <string name="common_minus">−</string>
+    <string name="common_plus">+</string>
+    <string name="common_swing">SWING</string>
+    <string name="common_fix">FIX</string>
+    <string name="common_cool">COOL</string>
+    <string name="common_fan_speed">Tốc độ quạt</string>
+    <string name="common_wind_direction">Hướng gió</string>
+    <string name="common_client_id">Client ID</string>
+    <string name="common_client_secret">Client Secret</string>
+</resources>

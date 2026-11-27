@@ -1,5 +1,8 @@
 package com.khaiit.kremote
 
+import com.khaiit.kremote.core.ui.text.UiText
+import com.khaiit.kremote.core.ui.text.uiText
+import com.khaiit.kremote.core.network.HubClientException
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -20,7 +23,7 @@ data class MilifeUiState(
     val configured: Boolean = false,
     val address: String = "",
     val power: Boolean? = null,
-    val message: String = "Đang đọc cấu hình Hub…"
+    val message: UiText = uiText(R.string.milife_reading_config)
 )
 
 /** Shares the existing encrypted HubSettingsStore; never stores a key in UI state. */
@@ -43,13 +46,13 @@ class MilifeController(
                     busy = false,
                     configured = current != null,
                     address = current?.config?.endpoint?.ipv4.orEmpty(),
-                    message = if (current == null) "Chưa cấu hình ESP32 Hub" else "Chưa xác minh trạng thái"
+                    message = if (current == null) uiText(R.string.milife_not_configured) else uiText(R.string.milife_unverified)
                 )
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
                 state = MilifeUiState(busy = false,
-                    message = "Không đọc được cấu hình Hub đã mã hóa. Hãy nhập lại cấu hình.")
+                    message = uiText(R.string.milife_config_unreadable))
             }
             if (settings != null && networkAllowed()) refresh()
         }
@@ -60,37 +63,37 @@ class MilifeController(
         if (state.busy) return
         val config = settings?.config
         if (config == null) {
-            state = state.copy(power = null, message = "Chưa cấu hình ESP32 Hub")
+            state = state.copy(power = null, message = uiText(R.string.milife_not_configured))
             return
         }
         if (!networkAllowed()) {
             permissionDenied()
             return
         }
-        state = state.copy(busy = true, power = null, message = "Đang đọc trạng thái qua HTTPS…")
+        state = state.copy(busy = true, power = null, message = uiText(R.string.milife_reading_https))
         scope.launch {
             try {
                 val result = api.readMilife(config)
                 state = result.fold(
-                    onSuccess = { power -> state.copy(power = power, message = "Trạng thái đã xác minh từ Hub") },
+                    onSuccess = { power -> state.copy(power = power, message = uiText(R.string.milife_verified)) },
                     onFailure = { error ->
                         val code = (
-                                error as? com.khaiit.kremote.core.network.HubClientException
+                                error as? HubClientException
                                 )?.code
 
                         val detail = when (code) {
-                            "https_not_configured" -> "Chưa cấu hình HTTPS Hub; vào card HTTPS Hub để thiết lập."
-                            "tls_validation_failed" -> "Chứng chỉ TLS không hợp lệ; kiểm tra fingerprint."
-                            "redirect_blocked" -> "HTTPS trả chuyển hướng; đã chặn."
-                            "http_401" -> "API key bị Hub từ chối (401)"
-                            "http_404" -> "Không tìm thấy API Milife (404)"
-                            "http_502" -> "Hub không đọc được Milife (502)"
-                            "http_504" -> "Hub chờ Milife quá lâu (504)"
-                            "timeout" -> "Kết nối Hub quá thời gian chờ"
-                            "network_permission" -> "Ứng dụng không có quyền truy cập mạng"
-                            "network_error" -> "Lỗi kết nối mạng hoặc đường VPN"
-                            "invalid_response" -> "Hub trả dữ liệu không hợp lệ"
-                            else -> "Không kết nối · Lỗi chưa xác định"
+                            "https_not_configured" -> uiText(R.string.milife_https_setup_needed)
+                            "tls_validation_failed" -> uiText(R.string.milife_tls_failed)
+                            "redirect_blocked" -> uiText(R.string.milife_redirect_blocked)
+                            "http_401" -> uiText(R.string.milife_unauthorized)
+                            "http_404" -> uiText(R.string.milife_not_found)
+                            "http_502" -> uiText(R.string.milife_read_failed)
+                            "http_504" -> uiText(R.string.milife_device_timeout)
+                            "timeout" -> uiText(R.string.milife_hub_timeout)
+                            "network_permission" -> uiText(R.string.milife_network_permission)
+                            "network_error" -> uiText(R.string.milife_network_error)
+                            "invalid_response" -> uiText(R.string.milife_invalid_response)
+                            else -> uiText(R.string.milife_unknown_error)
                         }
 
                         state.copy(power = null, message = detail)
@@ -99,7 +102,7 @@ class MilifeController(
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
-                state = state.copy(power = null, message = "Không kết nối · Yêu cầu không thành công")
+                state = state.copy(power = null, message = uiText(R.string.milife_request_failed))
             } finally {
                 state = state.copy(busy = false)
             }
@@ -114,28 +117,28 @@ class MilifeController(
             permissionDenied()
             return
         }
-        state = state.copy(busy = true, power = null, message = "Đang gửi lệnh và kiểm tra trạng thái…")
+        state = state.copy(busy = true, power = null, message = uiText(R.string.milife_sending))
         scope.launch {
             try {
                 when (val result = api.setPower(config, power)) {
                     is MilifePowerResult.Rejected -> {
                         val detail = when (result.code) {
-                            "https_not_configured" -> "Chưa cấu hình HTTPS Hub"
-                            "unauthorized" -> "API key bị Hub từ chối (401)"
-                            "unsupported_action" -> "Hub chưa hỗ trợ lệnh bật/tắt Milife (422)"
-                            "miot_hello_timeout" -> "Hub không kết nối được với Milife (504)"
-                            "miot_not_configured" -> "Hub chưa cấu hình ổ cắm Milife"
-                            "device_not_ready" -> "Hub chưa sẵn sàng"
-                            "miot_device_rejected" -> "Ổ cắm từ chối lệnh"
-                            else -> "Hub từ chối lệnh bật/tắt Milife"
+                            "https_not_configured" -> uiText(R.string.milife_https_not_configured)
+                            "unauthorized" -> uiText(R.string.milife_unauthorized)
+                            "unsupported_action" -> uiText(R.string.milife_unsupported_action)
+                            "miot_hello_timeout" -> uiText(R.string.milife_hello_timeout)
+                            "miot_not_configured" -> uiText(R.string.milife_miot_not_configured)
+                            "device_not_ready" -> uiText(R.string.milife_device_not_ready)
+                            "miot_device_rejected" -> uiText(R.string.milife_device_rejected)
+                            else -> uiText(R.string.milife_command_rejected)
                         }
-                        state = state.copy(message = "$detail. Hãy đọc lại trạng thái.")
+                        state = state.copy(message = uiText(R.string.milife_rejected_read_back, detail))
                     }
                     is MilifePowerResult.ReadBack -> {
                         val message = when (result.power) {
-                            power -> if (power) "Đã xác minh ổ cắm bật" else "Đã xác minh ổ cắm tắt"
-                            null -> "Chưa xác minh được kết quả. Hãy đọc lại trạng thái."
-                            else -> "Ổ cắm chưa ở trạng thái yêu cầu. Có thể đọc lại trạng thái."
+                            power -> if (power) uiText(R.string.milife_verified_on) else uiText(R.string.milife_verified_off)
+                            null -> uiText(R.string.milife_result_unverified)
+                            else -> uiText(R.string.milife_target_mismatch)
                         }
                         state = state.copy(power = result.power, message = message)
                     }
@@ -143,7 +146,7 @@ class MilifeController(
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
-                state = state.copy(message = "Chưa xác minh được kết quả. Hãy đọc lại trạng thái.")
+                state = state.copy(message = uiText(R.string.milife_result_unverified))
             } finally {
                 state = state.copy(busy = false)
             }
@@ -166,10 +169,10 @@ class MilifeController(
             )
         } catch (_: IllegalArgumentException) {
             state = state.copy(power = null,
-                message = "IPv4 phải là địa chỉ LAN; API key gồm đúng 64 ký tự ASCII.")
+                message = uiText(R.string.milife_invalid_credentials))
             return false
         }
-        state = state.copy(busy = true, power = null, message = "Đang lưu cấu hình Hub…")
+        state = state.copy(busy = true, power = null, message = uiText(R.string.milife_saving))
         scope.launch {
             var saved = false
             try {
@@ -177,11 +180,11 @@ class MilifeController(
                 settings = candidate
                 saved = true
                 state = state.copy(configured = true, address = candidate.config.endpoint.ipv4,
-                    power = null, message = "Đã lưu cấu hình Hub · Chưa xác minh trạng thái")
+                    power = null, message = uiText(R.string.milife_saved))
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
-                state = state.copy(power = null, message = "Không lưu được cấu hình Hub; cấu hình cũ vẫn giữ nguyên")
+                state = state.copy(power = null, message = uiText(R.string.milife_save_failed))
             } finally {
                 state = state.copy(busy = false)
             }
@@ -191,7 +194,7 @@ class MilifeController(
     }
 
     fun permissionDenied() {
-        if (!state.busy) state = state.copy(power = null, message = "Cần quyền mạng LAN để kết nối Milife")
+        if (!state.busy) state = state.copy(power = null, message = uiText(R.string.milife_lan_permission))
     }
 
     override fun close() { scope.cancel() }

@@ -1,0 +1,33 @@
+<resources>
+    <string name="tuya_network_error">Lỗi mạng</string>
+    <string name="tuya_refresh_failed">Không cập nhật được trạng thái: %1$s</string>
+    <string name="tuya_toggle_failed">Chưa xác minh được lệnh: %1$s. Hãy Refresh.</string>
+    <string name="tuya_master_failed">Power tổng chưa xác minh được cả 6 kênh: %1$s. Hãy Refresh để kiểm tra trạng thái từng ổ.</string>
+    <string name="tuya_config_unreadable">Không đọc được cấu hình Tuya đã lưu. Hãy nhập lại cấu hình.</string>
+    <string name="tuya_save_failed">Không thể lưu cấu hình</string>
+    <string name="tuya_config_read_failed">Không đọc được cấu hình Tuya</string>
+    <string name="tuya_settings_intro">Cấu hình được mã hóa trên điện thoại và không hiển thị lại. Để trống trường bất kỳ để giữ giá trị đã lưu; cấu hình lần đầu cần nhập đủ 3 trường.</string>
+    <string name="tuya_channel_power_off">Tắt %1$s</string>
+    <string name="tuya_channel_power_on">Bật %1$s</string>
+    <string name="tuya_channel_power_unknown">%1$s chưa xác minh</string>
+    <string name="tuya_rename_failed">Không lưu được tên ổ cắm</string>
+    <string name="tuya_title">Rạng Đông OC09</string>
+    <string name="tuya_not_configured">Chưa cấu hình Tuya</string>
+    <string name="tuya_busy">Đang xử lý...</string>
+    <string name="tuya_verified">Cloud · Xác minh lúc đồng bộ</string>
+    <string name="tuya_unverified">Cloud · Chưa xác minh</string>
+    <string name="tuya_rename">Đổi tên ổ cắm</string>
+    <string name="tuya_settings">Cấu hình Tuya</string>
+    <string name="tuya_refresh">Làm mới trạng thái</string>
+    <string name="tuya_master">Nguồn tổng</string>
+    <string name="tuya_master_any_on">Có ổ đang bật</string>
+    <string name="tuya_master_all_off">Tất cả đã tắt</string>
+    <string name="tuya_master_unverified">Chưa xác minh</string>
+    <string name="tuya_master_power_off">Tắt toàn bộ 5 ổ cắm và USB</string>
+    <string name="tuya_master_power_on">Bật toàn bộ 5 ổ cắm và USB</string>
+    <string name="tuya_master_power_unknown">Nguồn tổng chưa xác minh</string>
+    <string name="tuya_channel_unknown">Chưa rõ</string>
+    <string name="tuya_rename_intro">Để trống để khôi phục tên mặc định. Tối đa 24 ký tự mỗi tên.</string>
+    <string name="tuya_settings_title">Cấu hình Tuya OC09</string>
+    <string name="tuya_device_id">Device ID OC09</string>
+</resources>

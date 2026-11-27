@@ -26,6 +26,8 @@ dependencyResolutionManagement {
 rootProject.name = "Khai RC"
 include(":core:vault")
 project(":core:vault").projectDir = file("core/vault")
+include(":core:ui")
+project(":core:ui").projectDir = file("core/ui")
 include(":app")
 
 include(":core:ir")

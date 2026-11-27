@@ -1,23 +1,23 @@
 package com.khaiit.kremote.feature.ac.daikin
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
+import androidx.compose.ui.res.stringResource
+import com.khaiit.kremote.core.ui.text.asString
+import com.khaiit.kremote.core.ui.text.UiText
+import com.khaiit.kremote.core.ui.text.uiText
+import com.khaiit.kremote.core.ui.R as CoreUiR
+import com.khaiit.kremote.core.ui.components.DeviceCard
+import com.khaiit.kremote.core.ui.components.PowerIconButton
+import com.khaiit.kremote.core.ui.components.PowerTone
+import com.khaiit.kremote.core.ui.components.TemperatureStepper
+import com.khaiit.kremote.core.ui.components.PressFeedbackButton as Button
+import androidx.annotation.StringRes
+import com.khaiit.kremote.feature.ac.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PowerSettingsNew
-import com.khaiit.kremote.feature.ac.ui.PressFeedbackButton as Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import com.khaiit.kremote.feature.ac.ui.PressFeedbackIconButton as IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,14 +27,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 /**
- * Daikin AC card with the same visual structure as ToshibaAcDeviceCard:
+ * Daikin AC card layout:
  * header + power, centered temperature controls, state summary, and
  * grouped mode/fan/swing controls.
  *
@@ -46,7 +43,7 @@ fun DaikinAcDeviceCard(
     modifier: Modifier = Modifier
 ) {
     var state by remember(controller) { mutableStateOf(controller.state) }
-    var statusText by remember(controller) { mutableStateOf<String?>(null) }
+    var statusText by remember(controller) { mutableStateOf<UiText?>(null) }
 
     val execute: (() -> DaikinAcState) -> Unit = { action ->
         runCatching(action)
@@ -55,154 +52,108 @@ fun DaikinAcDeviceCard(
                 statusText = null
             }
             .onFailure { error ->
-                statusText = error.message ?: "IR command failed"
+                statusText = error.message?.let(UiText::Raw) ?: uiText(CoreUiR.string.common_ir_command_failed)
             }
     }
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+    DeviceCard(modifier) {
+        // Same header and power-button semantics as Toshiba.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Same header and power-button semantics as Toshiba.
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = "Daikin AC",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = if (controller.isIrAvailable) "IR · Trạng thái lưu trên máy" else "Không có bộ phát IR",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                IconButton(
-                    onClick = { execute(controller::togglePower) },
-                    enabled = controller.isIrAvailable,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (state.power) {
-                                MaterialTheme.colorScheme.error
-                            } else {
-                                MaterialTheme.colorScheme.primary
-                            }
-                        )
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.PowerSettingsNew,
-                        contentDescription = if (state.power) "Gửi lệnh tắt Daikin AC" else "Gửi lệnh bật Daikin AC",
-                        tint = if (state.power) {
-                            MaterialTheme.colorScheme.onError
-                        } else {
-                            MaterialTheme.colorScheme.onPrimary
-                        }
-                    )
-                }
-            }
-
-            // Align the temperature +/- controls with the Toshiba card.
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(16.dp))
-                    .padding(horizontal = 10.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(
-                    onClick = { execute(controller::decreaseTemperature) },
-                    enabled = controller.isIrAvailable && state.power &&
-                        state.temperatureC > DaikinAcState.MIN_TEMPERATURE_C
-                ) {
-                    Text("−", fontSize = 24.sp)
-                }
-
+            Column {
                 Text(
-                    text = "${state.temperatureC} °C",
-                    fontSize = 42.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (state.power) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.Center,
-                    maxLines = 1
+                    text = stringResource(R.string.daikin_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
                 )
-
-                Button(
-                    onClick = { execute(controller::increaseTemperature) },
-                    enabled = controller.isIrAvailable && state.power &&
-                        state.temperatureC < DaikinAcState.MAX_TEMPERATURE_C
-                ) {
-                    Text("+", fontSize = 24.sp)
-                }
+                Text(
+                    text = if (controller.isIrAvailable) stringResource(R.string.daikin_ir_ready) else stringResource(CoreUiR.string.common_ir_unavailable),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
-            Text(
-                text = "${state.mode.displayName()} • Fan ${state.fanSpeed.displayName()} • " +
-                    "Swing ${if (state.swing) "ON" else "OFF"}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+            PowerIconButton(
+                onClick = { execute(controller::togglePower) },
+                enabled = controller.isIrAvailable,
+                contentDescription = if (state.power) stringResource(R.string.daikin_power_off) else stringResource(R.string.daikin_power_on),
+                tone = if (state.power) PowerTone.Danger else PowerTone.Primary
             )
+        }
 
-            // Daikin cycles through modes instead of selecting only COOL.
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(
-                    onClick = { execute(controller::cycleMode) },
-                    enabled = controller.isIrAvailable && state.power,
-                    modifier = Modifier.weight(1f),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 8.dp)
-                ) { Text("MODE") }
-                Button(
-                    onClick = { execute(controller::cycleFanSpeed) },
-                    enabled = controller.isIrAvailable && state.power,
-                    modifier = Modifier.weight(1f),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 8.dp)
-                ) { Text("SPEED") }
-                Button(
-                    onClick = { execute(controller::toggleSwing) },
-                    enabled = controller.isIrAvailable && state.power,
-                    modifier = Modifier.weight(1f),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 8.dp)
-                ) { Text("SWING") }
-            }
+        // Align the temperature +/- controls with the Toshiba card.
+        TemperatureStepper(
+            temperatureC = state.temperatureC,
+            active = state.power,
+            canDecrease = controller.isIrAvailable && state.power &&
+                state.temperatureC > DaikinAcState.MIN_TEMPERATURE_C,
+            canIncrease = controller.isIrAvailable && state.power &&
+                state.temperatureC < DaikinAcState.MAX_TEMPERATURE_C,
+            onDecrease = { execute(controller::decreaseTemperature) },
+            onIncrease = { execute(controller::increaseTemperature) }
+        )
 
-            statusText?.let { message ->
-                Spacer(modifier = Modifier.size(2.dp))
-                Text(
-                    text = message,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
+        Text(
+            text = stringResource(
+                R.string.daikin_summary,
+                stringResource(state.mode.displayName()),
+                stringResource(state.fanSpeed.displayName()),
+                stringResource(if (state.swing) R.string.daikin_swing_on else R.string.daikin_swing_off)
+            ),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        // Daikin cycles through modes instead of selecting only COOL.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Button(
+                onClick = { execute(controller::cycleMode) },
+                enabled = controller.isIrAvailable && state.power,
+                modifier = Modifier.weight(1f),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 8.dp)
+            ) { Text(stringResource(R.string.daikin_mode)) }
+            Button(
+                onClick = { execute(controller::cycleFanSpeed) },
+                enabled = controller.isIrAvailable && state.power,
+                modifier = Modifier.weight(1f),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 8.dp)
+            ) { Text(stringResource(R.string.daikin_speed)) }
+            Button(
+                onClick = { execute(controller::toggleSwing) },
+                enabled = controller.isIrAvailable && state.power,
+                modifier = Modifier.weight(1f),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 8.dp)
+            ) { Text(stringResource(CoreUiR.string.common_swing)) }
+        }
+
+        statusText?.let { message ->
+            Spacer(modifier = Modifier.size(2.dp))
+            Text(
+                text = message.asString(),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
     }
 }
 
-private fun DaikinMode.displayName(): String = when (this) {
-    DaikinMode.AUTO -> "Auto"
-    DaikinMode.COOL -> "Cool"
-    DaikinMode.DRY -> "Dry"
-    DaikinMode.FAN -> "Fan"
-    DaikinMode.HEAT -> "Heat"
+@StringRes
+private fun DaikinMode.displayName(): Int = when (this) {
+    DaikinMode.AUTO -> R.string.daikin_mode_auto
+    DaikinMode.COOL -> R.string.daikin_mode_cool
+    DaikinMode.DRY -> R.string.daikin_mode_dry
+    DaikinMode.FAN -> R.string.daikin_mode_fan
+    DaikinMode.HEAT -> R.string.daikin_mode_heat
 }
 
-private fun DaikinFanSpeed.displayName(): String = when (this) {
-    DaikinFanSpeed.LOW -> "Low"
-    DaikinFanSpeed.HIGH -> "High"
+@StringRes
+private fun DaikinFanSpeed.displayName(): Int = when (this) {
+    DaikinFanSpeed.LOW -> R.string.daikin_fan_low
+    DaikinFanSpeed.HIGH -> R.string.daikin_fan_high
 }
