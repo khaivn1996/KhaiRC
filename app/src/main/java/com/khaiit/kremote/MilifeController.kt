@@ -5,7 +5,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.khaiit.kremote.core.network.HubConfig
 import com.khaiit.kremote.core.network.HubEndpoint
-import com.khaiit.kremote.core.network.MilifeReadApi
+import com.khaiit.kremote.core.network.MilifePowerApi
+import com.khaiit.kremote.core.network.MilifePowerResult
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,7 +25,7 @@ data class MilifeUiState(
 
 /** Shares the existing encrypted HubSettingsStore; never stores a key in UI state. */
 class MilifeController(
-    private val api: MilifeReadApi,
+    private val api: MilifePowerApi,
     private val store: HubConfigStore,
     private val networkAllowed: () -> Boolean
 ) : AutoCloseable {
@@ -105,6 +106,50 @@ class MilifeController(
         }
     }
 
+    fun setPower(power: Boolean) {
+        val currentPower = state.power
+        if (state.busy || currentPower == null || currentPower == power) return
+        val config = settings?.config ?: return
+        if (!networkAllowed()) {
+            permissionDenied()
+            return
+        }
+        state = state.copy(busy = true, power = null, message = "Đang gửi lệnh và kiểm tra trạng thái…")
+        scope.launch {
+            try {
+                when (val result = api.setPower(config, power)) {
+                    is MilifePowerResult.Rejected -> {
+                        val detail = when (result.code) {
+                            "https_not_configured" -> "Chưa cấu hình HTTPS Hub"
+                            "unauthorized" -> "API key bị Hub từ chối (401)"
+                            "unsupported_action" -> "Hub chưa hỗ trợ lệnh bật/tắt Milife (422)"
+                            "miot_hello_timeout" -> "Hub không kết nối được với Milife (504)"
+                            "miot_not_configured" -> "Hub chưa cấu hình ổ cắm Milife"
+                            "device_not_ready" -> "Hub chưa sẵn sàng"
+                            "miot_device_rejected" -> "Ổ cắm từ chối lệnh"
+                            else -> "Hub từ chối lệnh bật/tắt Milife"
+                        }
+                        state = state.copy(message = "$detail. Hãy đọc lại trạng thái.")
+                    }
+                    is MilifePowerResult.ReadBack -> {
+                        val message = when (result.power) {
+                            power -> if (power) "Đã xác minh ổ cắm bật" else "Đã xác minh ổ cắm tắt"
+                            null -> "Chưa xác minh được kết quả. Hãy đọc lại trạng thái."
+                            else -> "Ổ cắm chưa ở trạng thái yêu cầu. Có thể đọc lại trạng thái."
+                        }
+                        state = state.copy(power = result.power, message = message)
+                    }
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                state = state.copy(message = "Chưa xác minh được kết quả. Hãy đọc lại trạng thái.")
+            } finally {
+                state = state.copy(busy = false)
+            }
+        }
+    }
+
     /** Blank replacementKey preserves the existing Hub key and IR routing settings. */
     fun saveConfiguration(address: String, replacementKey: String): Boolean {
         if (state.busy) return false
@@ -146,7 +191,7 @@ class MilifeController(
     }
 
     fun permissionDenied() {
-        if (!state.busy) state = state.copy(power = null, message = "Cần quyền mạng LAN để đọc Milife")
+        if (!state.busy) state = state.copy(power = null, message = "Cần quyền mạng LAN để kết nối Milife")
     }
 
     override fun close() { scope.cancel() }

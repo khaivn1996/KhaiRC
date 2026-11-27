@@ -75,7 +75,7 @@ fun MilifeDeviceCard(controller: MilifeController, modifier: Modifier = Modifier
                 Column(modifier = Modifier.weight(1f)) {
                     Text("Milife 10A", style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold)
-                    Text("ESP32 Hub · HTTPS → miIO LAN · Chỉ đọc", style = MaterialTheme.typography.bodySmall,
+                    Text("ESP32 Hub · HTTPS → miIO LAN", style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 IconButton(onClick = { showSettings = true }, enabled = !state.busy,
@@ -91,7 +91,7 @@ fun MilifeDeviceCard(controller: MilifeController, modifier: Modifier = Modifier
                 when (state.power) {
                     true -> "Đang bật"
                     false -> "Đang tắt"
-                    null -> "Không kết nối"
+                    null -> "Chưa xác minh trạng thái"
                 },
                 style = MaterialTheme.typography.titleMedium,
                 color = if (state.power == null) MaterialTheme.colorScheme.onSurfaceVariant
@@ -100,17 +100,21 @@ fun MilifeDeviceCard(controller: MilifeController, modifier: Modifier = Modifier
             Text(state.message, style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                // Read-only release: these buttons have no executable action or POST path.
-                OutlinedButton(onClick = {}, enabled = false, modifier = Modifier.weight(1f)) {
+                OutlinedButton(
+                    onClick = { controller.setPower(true) },
+                    enabled = !state.busy && state.power == false,
+                    modifier = Modifier.weight(1f)
+                ) {
                     Text("BẬT")
                 }
-                OutlinedButton(onClick = {}, enabled = false, modifier = Modifier.weight(1f)) {
+                OutlinedButton(
+                    onClick = { controller.setPower(false) },
+                    enabled = !state.busy && state.power == true,
+                    modifier = Modifier.weight(1f)
+                ) {
                     Text("TẮT")
                 }
             }
-            Text("Điều khiển nguồn tạm khóa để bảo vệ hệ thống đang chạy.",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 

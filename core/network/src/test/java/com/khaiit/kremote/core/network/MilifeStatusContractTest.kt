@@ -33,6 +33,23 @@ class MilifeStatusContractTest {
         }
     }
 
+    @Test fun encodesExplicitPowerTargets() {
+        assertEquals("""{"device_id":"milife_plug_10a","action":"power_on"}""",
+            milifePowerBody(true).decodeToString())
+        assertEquals("""{"device_id":"milife_plug_10a","action":"power_off"}""",
+            milifePowerBody(false).decodeToString())
+    }
+
+    @Test fun onlyKnownRejectionsSkipReadBack() {
+        assertTrue(isMilifePowerRejection(504, "miot_hello_timeout"))
+        assertTrue(isMilifePowerRejection(502, "miot_device_rejected"))
+        assertTrue(isMilifePowerRejection(422, "unsupported_action"))
+        assertFalse(isMilifePowerRejection(504, "miot_write_timeout"))
+        assertFalse(isMilifePowerRejection(502, "miot_write_unconfirmed"))
+        assertFalse(isMilifePowerRejection(502, "miot_hello_timeout"))
+        assertFalse(isMilifePowerRejection(200, "sent"))
+    }
+
     @Test fun sendsOnlyOneAuthenticatedGetAndNeverFollowsRedirect() = runBlocking {
         val calls = AtomicInteger()
         val url = URL("http://192.168.2.200:80/api/v1/devices/milife_plug_10a/state")
