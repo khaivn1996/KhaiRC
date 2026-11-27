@@ -2,7 +2,7 @@
 
 **Khai RC** là ứng dụng điều khiển thiết bị trong nhà dành cho Android, kết hợp **hồng ngoại (IR)**, **Wake-on-LAN (WOL)**, **Tuya Cloud** và **ESP32-S3 Hub qua HTTPS** trong một giao diện thống nhất. Ứng dụng được viết bằng **Kotlin**, **Jetpack Compose** và **Material 3**, theo cấu trúc Gradle đa module.
 
-> **Trạng thái dự án:** Các chức năng IR, WOL và điều khiển Rạng Đông OC09 đã được kiểm thử trên thiết bị thực tế. Phần ESP32 Hub (điều khiển Toshiba AC, đọc trạng thái Milife) đang được phát triển theo từng giai đoạn; xem `docs/HUB_HTTPS_ANDROID_STAGE1.md`.
+> **Trạng thái dự án:** Các chức năng IR, WOL và điều khiển Rạng Đông OC09 đã được kiểm thử trên thiết bị thực tế. Với ESP32 Hub, kết nối HTTPS và điều khiển Milife 10A đã đạt trên LAN và 4G. Điều khiển Toshiba AC đã đạt trong LAN. Xem [biên bản nghiệm thu HTTPS Hub](docs/HUB_HTTPS_ANDROID_STAGE1.md).
 
 ## 1. Thiết bị và chức năng
 
@@ -13,8 +13,8 @@
 | Toshiba AC | ESP32 Hub qua HTTPS → IR 38 kHz | Power, COOL, nhiệt độ, FAN, FIX, SWING |
 | PC | Wake-on-LAN (UDP) | Gửi magic packet để đánh thức máy; không xác nhận trạng thái bật/tắt thực |
 | Rạng Đông / Ralli OC09 | Tuya Cloud, Singapore | Bật/tắt 5 ổ cắm và USB, Power tổng, đọc trạng thái Cloud, đổi tên ổ cắm |
-| Milife 10A | ESP32 Hub qua HTTPS → miIO LAN | **Chỉ đọc** trạng thái nguồn; nút BẬT/TẮT đang tạm khóa |
-| ESP32 Hub | HTTPS (chứng chỉ tự ký, pin SHA-256) | Card “HTTPS Hub · Stage 1”: kiểm tra `GET /api/v1/health` |
+| Milife 10A | ESP32 Hub qua HTTPS → miIO LAN | Bật/tắt và đọc lại trạng thái nguồn để xác nhận |
+| ESP32 Hub | HTTPS (chứng chỉ tự ký, pin SHA-256) | Kiểm tra kết nối bằng `GET /api/v1/health` trong thẻ **HTTPS Hub · Stage 2A** |
 
 **Lưu ý về trạng thái:** Điều khiển IR là một chiều, nên trạng thái hiển thị trên ứng dụng có thể khác với thiết bị thực. Điều này cũng đúng với Toshiba AC qua Hub: Hub chỉ xác nhận đã phát IR, trạng thái trên app chỉ là ước lượng. Nếu không rõ lệnh đã phát hay chưa (timeout, phản hồi lạ), card Toshiba khóa thao tác cho đến khi người dùng xác nhận đã kiểm tra máy lạnh. Wake-on-LAN chỉ xác nhận quá trình gửi gói tin, không xác nhận PC đã bật. OC09 (qua Cloud) và Milife (qua Hub) có thể đọc lại trạng thái thực.
 
@@ -97,11 +97,15 @@ Khai RC gọi Tuya Cloud trực tiếp từ Android, **không cần** OpenWrt, E
 
 ## 4a. Cấu hình ESP32 Hub (Toshiba AC, Milife)
 
-1. Trong card **HTTPS Hub · Stage 1** (tab Mạng), nhập hostname DDNS hoặc IPv4 LAN/VPN, cổng HTTPS và **SHA-256 fingerprint** của chứng chỉ tự ký trên ESP32. Cách lấy fingerprint xem `docs/HUB_HTTPS_ANDROID_STAGE1.md`.
+1. Trong card **HTTPS Hub · Stage 2A** (tab Mạng), nhập hostname DDNS hoặc IPv4 LAN/VPN, cổng HTTPS và **SHA-256 fingerprint** của chứng chỉ tự ký trên ESP32. Cách lấy fingerprint xem `docs/HUB_HTTPS_ANDROID_STAGE1.md`.
 2. Trong card **Milife 10A**, mở cấu hình **Kết nối ESP32 Hub**, nhập IP LAN của Hub và `HUB_API_KEY` (64 ký tự ASCII). Để trống ô key khi sửa thì giữ key đã lưu.
 3. Card Toshiba AC dùng chung hai cấu hình trên. Trên Android 17 (SDK 37) trở lên, ứng dụng cần quyền truy cập mạng LAN (`ACCESS_LOCAL_NETWORK`).
 
-Mọi kết nối Hub chỉ tin **đúng** chứng chỉ đã pin, vẫn kiểm tra hostname, không chuyển sang HTTP, không theo redirect và không tự gửi lại lệnh.
+Ứng dụng chặn HTTP không mã hóa tới Hub. Kết nối HTTPS chỉ tin chứng chỉ đã pin và vẫn kiểm tra hostname. Ứng dụng chặn redirect và mỗi lần nhấn gửi tối đa một lệnh.
+
+### Cập nhật firmware Hub từ xa qua VPN
+
+OTA của Hub dùng HTTP cổng `8081` trong LAN. Nếu cần cập nhật từ xa, kết nối VPN vào LAN rồi mở `http://<IP-LAN-của-Hub>:8081/update`. Giữ cổng `8081` đóng trên Internet. Đã xác nhận từ 4G rằng cổng này không còn truy cập được trực tiếp.
 
 ## 4b. Sao lưu cloud
 
@@ -157,8 +161,8 @@ Chi tiết kỹ thuật (module, vòng đời app, luồng điều khiển, giao
 
 ## 8. Phạm vi hiện tại và hướng phát triển
 
-- **Đã triển khai:** điều khiển IR trên điện thoại (quạt trần, Daikin), WOL, Rạng Đông OC09 qua Tuya Cloud; Toshiba AC qua ESP32 Hub (HTTPS); đọc trạng thái Milife 10A qua Hub.
-- **Chưa triển khai:** điều khiển nguồn Milife, chuyển quạt trần/Daikin sang Hub, truy cập Hub qua Internet (chưa mở cổng WAN), Tuya local.
+- **Đã triển khai:** IR trên điện thoại cho quạt trần và Daikin, WOL, Rạng Đông OC09 qua Tuya Cloud, Toshiba AC qua HTTPS Hub trong LAN, và bật/tắt Milife 10A qua HTTPS Hub với bước đọc lại trạng thái.
+- **Chưa tích hợp trên Android:** điều khiển quạt trần hoặc Daikin qua Hub và điều khiển OC09 qua Tuya LAN.
 - **Định hướng:** mở rộng ESP32-S3 Hub thành bộ phát IR qua Wi-Fi để không phụ thuộc IR blaster của điện thoại, nhưng chưa thay đổi kiến trúc Tuya Cloud hiện hành.
 
 ---

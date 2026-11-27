@@ -154,6 +154,7 @@ Nguồn: `core/network/src/main/java/com/khaiit/kremote/core/network/{HubClient,
 ### 5.4 Quạt trần (`:feature:fan`)
 
 - `FanController(irTransmitter)`: `powerHigh()`, `swing()`, `off()` phát pattern cố định trong `FanIrCodes` (`FREQUENCY = 38028`). `isIrAvailable` lấy từ transmitter.
+- Quạt trần TAIZ dùng IR tích hợp trên điện thoại. Điều khiển TAIZ qua ESP32 Hub HTTPS nằm ngoài phạm vi dự án.
 
 Nguồn: `feature/fan/src/main/java/com/khaiit/kremote/feature/fan/*.kt`.
 
@@ -166,6 +167,7 @@ Nguồn: `feature/fan/src/main/java/com/khaiit/kremote/feature/fan/*.kt`.
   - Frame 22 byte gồm preamble 7 byte và state frame 15 byte; mỗi phần có checksum.
   - Profile ở `DaikinBrcProfile` (38 kHz).
 - Prefs `daikin_ac_settings` (`DaikinAcSettings`).
+- Điều khiển Daikin AC qua ESP32 Hub HTTPS nằm ngoài phạm vi dự án.
 
 Nguồn: `feature/ac/src/main/java/com/khaiit/kremote/feature/ac/daikin/*.kt`.
 
