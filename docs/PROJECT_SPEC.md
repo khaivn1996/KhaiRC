@@ -1,8 +1,8 @@
 ---
 spec_version: 1
 project: KhaiRC
-last_synced_commit: 2be4cb80c980512af41213c164b7db6049a3e6e4
-last_synced_at: 2026-11-17
+last_synced_commit: 8a8dc8665831f882c7a4e30f50a70f86a574b469
+last_synced_at: 2026-11-30
 last_full_scan_commit: b636c48de8c6ddf378b18fa4e71a66270c4ec1d6
 ---
 
@@ -30,7 +30,7 @@ Nguồn: `README.md`, `settings.gradle.kts`, `app/src/main/java/com/khaiit/kremo
 | Toshiba AC | `ToshibaHttpsControlsCard` (`app`) | HTTPS → ESP32 Hub → IR | Không; Hub chỉ báo `sent`, `state_verified=false` |
 | PC | `WolDeviceCard` (`feature/wol`) | UDP magic packet cổng 9 | Không; chỉ xác nhận đã gửi |
 | Rạng Đông OC09 | `TuyaOc09DeviceCard` (`feature/tuya`) | Tuya Cloud REST (Singapore) | Có: đọc lại status Cloud |
-| Milife 10A | `MilifeDeviceCard` (`app`) | HTTPS → Hub → miIO LAN | Có, chỉ đọc; nút BẬT/TẮT bị khóa |
+| Milife 10A | `MilifeDeviceCard` (`app`) | HTTPS → Hub → miIO LAN | Có: bật/tắt và đọc lại trạng thái nguồn qua Hub |
 | ESP32 Hub | `HubHttpsProbeCard` (`app`) | HTTPS `GET /api/v1/health` | Probe sức khỏe/TLS |
 
 Card Toshiba điều khiển bằng IR của điện thoại (`ToshibaAcDeviceCard`) vẫn có trong `feature/ac/toshiba` nhưng `HomeScreen` không hiển thị (§10).
@@ -132,6 +132,11 @@ Nguồn: `core/network/.../AndroidWakeOnLanSender.kt`, `MacAddress.kt`, `Ipv4Add
   - Gửi một `GET /api/v1/devices/milife_plug_10a/state` kèm `X-API-Key`, readTimeout 8 s.
   - Cần `schema_version=1`, `device_id=milife_plug_10a`, `transport=miio_lan`, `state_verified=true`, `power` kiểu Boolean.
   - Lỗi trả `HubClientException` với các code: `https_not_configured`, `redirect_blocked`, `http_<n>`, `response_too_large`, `invalid_response`, `tls_validation_failed`, `timeout`, `network_permission`, `network_error`.
+- **`HubHttpsMilifeClient.setPower(config, power)`** (`MilifePowerApi`):
+  - Dùng cùng endpoint HTTPS đã lưu và API key cho POST và GET xác nhận. Gửi một POST, body cố định gồm `device_id` và `action`.
+  - Chỉ trả `MilifePowerResult.Rejected(code)` khi thiếu cấu hình HTTPS hoặc nhận đúng cặp HTTP status và mã lỗi từ chối đã biết.
+  - Sau HTTP 200, lỗi ghi chưa rõ hoặc mất phản hồi, thực hiện một GET và trả `ReadBack(power)`. `power=null` nếu GET không xác minh được. Không gửi lại POST.
+  - `MilifeStatusContractTest` kiểm tra body bật/tắt và phân loại lỗi cần đọc lại.
 - **`HubHttpsToshibaControlsClient.send(config, endpoint, command)`**:
   - Gửi một `POST /api/v1/commands`.
   - `ToshibaHttpsAction`: `State(power, temperatureC 17..30, fan)`, `Fix`, `SwingOn`, `SwingOff`. Body dựng từ chuỗi cố định.
@@ -208,6 +213,8 @@ Nguồn: `feature/tuya/src/main/java/com/khaiit/kremote/feature/tuya/*.kt`, `REA
 - `MilifeController(api, store, networkAllowed)`:
   - `init` load settings rồi gọi `refresh()` nếu đã cấu hình và có quyền.
   - `refresh()` gửi một GET và ánh xạ `HubClientException.code` ra thông điệp. `power = null` nghĩa là chưa xác minh.
+  - `setPower(power)` kiểm tra quyền mạng, chặn lệnh khi `busy`, khi chưa xác minh nguồn hoặc khi ổ đã ở trạng thái yêu cầu. Chỉ báo thành công khi GET xác nhận đúng trạng thái đích.
+  - Thẻ chỉ bật nút tương ứng với hành động có thể thực hiện. Khi chưa xác minh được trạng thái, người dùng có thể bấm **Đọc lại trạng thái**.
   - `saveConfiguration(address, replacementKey)`: key trống thì giữ key cũ.
   - Dialog "Kết nối ESP32 Hub" nằm trong `MilifeDeviceCard` (`SecureFlagPolicy.SecureOn`).
 - `ToshibaHttpsControlsController(api, hubStore, endpointProvider, stateStore, networkAllowed)`:
@@ -256,10 +263,13 @@ Nguồn: `feature/tuya/.../TuyaOc09Repository.kt`, `TuyaAuthManager.kt`, `TuyaOc
 |---|---|---|---|
 | `/api/v1/health` | GET | không | `HubHttpsProbe.check` |
 | `/api/v1/devices/milife_plug_10a/state` | GET | `X-API-Key` | `HubHttpsMilifeClient.readMilife` |
+| `/api/v1/commands` (`device_id=milife_plug_10a`) | POST | `X-API-Key` | `HubHttpsMilifeClient.setPower` |
 | `/api/v1/commands` (`device_id=toshiba_ac`) | POST | `X-API-Key` | `HubHttpsToshibaControlsClient.send` |
 
 - TLS: chứng chỉ tự ký, pin SHA-256 DER do người dùng nhập; hostname phải có trong SAN. Cách lấy fingerprint xem `docs/HUB_HTTPS_ANDROID_STAGE1.md`.
-- Hợp đồng phía firmware nằm ở repo `KhaiRC-ESP32-Hub` (`docs/PROJECT_SPEC.md` §6.5 của repo đó). Đã đối chiếu lúc tạo spec (firmware `d66cbf6`):
+- MiLife gửi JSON với đúng hai trường chuỗi: `device_id=milife_plug_10a` và `action=power_on` hoặc `power_off`. App xác nhận nguồn qua GET, kể cả khi POST trả HTTP 200.
+  - `422 unsupported_action`, `504 miot_hello_timeout` và `502 miot_device_rejected` là các ví dụ từ chối rõ ràng. `504 miot_write_timeout` và `502 miot_write_unconfirmed` cần GET kiểm tra.
+- Hợp đồng phía firmware nằm ở repo `KhaiRC-ESP32-Hub` (`docs/PROJECT_SPEC.md` §6.5 của repo đó). Phần Toshiba đã đối chiếu lúc tạo spec (firmware `d66cbf6`):
   - `state` có đúng 5 field: `power` bool, `temperature_c` 17–30, `fan_speed` `auto`/`1`–`5`. Các action khác có đúng 2 field.
   - `500 ir_send_failed` và lỗi đọc body (firmware đóng socket, không phản hồi) không nằm trong danh sách `Rejected` của app, nên app xếp vào `Uncertain`.
 
@@ -362,13 +372,15 @@ Nguồn: `AGENTS.md`, các module ở §5, `docs/AGENT_WORKFLOW.md`, `.gitignore
 - `core/network` khai báo `kotlinx-coroutines-core:1.10.2` trực tiếp, lệch với catalog `kotlinx-coroutines = 1.11.0`.
 - README lệch: §6 thiếu module `:core:vault` trong danh sách kiến trúc.
 - README lệch: §4a gọi card probe là “HTTPS Hub · Stage 1”, trong code tiêu đề là “HTTPS Hub · Stage 2A”.
+- README lệch: §1 và §8 còn ghi MiLife chỉ đọc hoặc chưa điều khiển nguồn. Code đã hỗ trợ bật/tắt qua HTTPS và xác nhận trạng thái bằng GET.
 - Cần xác nhận cấu hình Firebase Google provider/SHA-1, rules đã deploy và luồng hai máy đổi thế hệ khóa; unit test JVM chỉ kiểm crypto/codec/merge/precondition/parser, không xác minh dịch vụ thực tế.
 - Không có `android.util.Log`: khi chẩn đoán, bằng chứng chủ yếu là thông điệp UI và crash logcat.
 - Chưa có cấu hình ký release; `optimization` đang tắt.
-Nguồn: `README.md` §4a, §6, `settings.gradle.kts`, `app/.../HubHttpsProbeCard.kt`, `core/vault/src/test/`, `app/src/test/`, các file liên quan ở §5.
+Nguồn: `README.md` §1, §4a, §6, §8, `settings.gradle.kts`, `app/.../HubHttpsProbeCard.kt`, `core/vault/src/test/`, `app/src/test/`, các file liên quan ở §5.
 
 ## 11. Nhật ký đồng bộ
 
+- 2026-11-30 · INCREMENTAL · `2be4cb8..8a8dc86` · Cập nhật bật/tắt MiLife qua HTTPS, đọc lại trạng thái và kiểm tra hợp đồng. Ghi nhận mục README còn mô tả MiLife chỉ đọc.
 - 2026-11-17 · INCREMENTAL · `ad2827f..651f1e7` · Bổ sung thứ tự nguồn sự thật ở §8; đối chiếu README sau khi thống nhất lệnh kiểm chứng và chuyển chi tiết kiến trúc sang spec.
 - 2026-11-16 · INCREMENTAL · `ad2827f..2be4cb8` · Thêm vault mã hóa, Google Auth/Firestore transaction, gate/auto-push, prefs/backup rules và test; đối chiếu README.
 - 2026-11-13 · INCREMENTAL · `b636c48..ad2827f` · Xác nhận JUnit cho core/ir, feature/fan, feature/wol; bổ sung quy trình PLAN và công cụ đọc spec.
