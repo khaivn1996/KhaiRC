@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.SharedPreferences
 import android.os.SystemClock
+import android.security.NetworkSecurityPolicy
 import android.util.Base64
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -54,6 +55,13 @@ class HubIntegrationTest {
     private val endpoint = HubEndpoint("192.168.10.20")
     private val dummyKey = "integration-test-key-".padEnd(64, 'x')
     private val config get() = HubConfig(endpoint, dummyKey)
+
+    @Test
+    fun cleartextIsBlockedForLanHub() {
+        val policy = NetworkSecurityPolicy.getInstance()
+        assertFalse(policy.isCleartextTrafficPermitted)
+        assertFalse(policy.isCleartextTrafficPermitted(endpoint.ipv4))
+    }
 
     @Test
     fun inspectReadsSchemaAndActionsWithoutSendingCredentials() = runBlocking {

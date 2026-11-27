@@ -278,9 +278,9 @@ Nguồn: `core/network/.../HubHttps*.kt`, `docs/HUB_HTTPS_ANDROID_STAGE1.md`.
 ### 6.3 ESP32 Hub HTTP LAN (cổng 80)
 
 - `HubClient` gọi `http://<ipv4>:80/api/v1/{health,capabilities,devices,commands,devices/milife_plug_10a/state}`.
-- `network_security_config.xml` cho phép cleartext toàn cục để phục vụ client này. Hiện không có UI dùng (§10).
+- Chính sách mạng mặc định chặn cleartext. Bản debug chỉ cho phép `127.0.0.1` để `HubIntegrationTest` chạy với server loopback; luồng điều khiển Hub trong app dùng HTTPS (§6.2).
 
-Nguồn: `core/network/.../HubClient.kt`, `app/src/main/res/xml/network_security_config.xml`.
+Nguồn: `core/network/.../HubClient.kt`, `app/src/{main,debug}/res/xml/network_security_config.xml`, `app/src/androidTest/.../HubIntegrationTest.kt`.
 
 ### 6.4 Wake-on-LAN & IR
 
@@ -364,7 +364,7 @@ Nguồn: `AGENTS.md`, các module ở §5, `docs/AGENT_WORKFLOW.md`, `.gitignore
 
 ## 10. Vấn đề đã biết, TODO, cần xác nhận
 
-- `HubClient` (HTTP LAN cổng 80) và enum `HubCommand` không còn UI nào gọi. Chỉ `HubClientTest`, `MilifeStatusContractTest` và `HubIntegrationTest` dùng. `network_security_config.xml` vẫn cho phép cleartext toàn cục. Cần quyết định giữ hay gỡ.
+- `HubClient` (HTTP LAN cổng 80) và enum `HubCommand` chỉ được gọi từ `HubClientTest`, `MilifeStatusContractTest` và `HubIntegrationTest`. App chặn cleartext tới Hub LAN (§6.3).
 - `HubSettings.fanTransport`/`fixTransport` (`HubTransport.PHONE|HUB`) vẫn được lưu và đọc nhưng không còn logic nào dùng.
 - `ToshibaAcController`/`ToshibaAcDeviceCard` (IR điện thoại) không hiển thị. `HomeScreen` vẫn nhận tham số `toshibaAcController` nhưng không dùng.
 - `HomeTab` có subtitle đếm thiết bị hardcode ("6 thiết bị", "3 thiết bị"), dễ lệch khi thêm/bớt card.
